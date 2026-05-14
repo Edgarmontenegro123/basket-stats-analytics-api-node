@@ -40,3 +40,22 @@ export const uploadStats = (
 
     res.status(201).json(newUpload);
 };
+
+export const getUploadById = (
+    req: Request,
+    res: Response,
+) => {
+    const { id } = req.params;
+
+    const upload = uploads.find((item) => item.id === id);
+
+    if (!upload) {
+        res.status(404).json({
+            error: 'upload not found',
+        });
+
+        return;
+    }
+
+    res.status(200).json(upload);
+};
