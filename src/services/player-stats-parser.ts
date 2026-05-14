@@ -62,6 +62,9 @@ export const parsePlayerStatsFromText = (
 
         const playerNumber = parts[0];
 
+        const isStarter = parts.includes('*');
+        const minutes = parts[minutesIndex];
+
         const rawPlayerName = parts
             .slice(1, minutesIndex)
             .join(' ')
@@ -91,7 +94,10 @@ export const parsePlayerStatsFromText = (
             id: `${Date.now()}-${playerNumber}-${stats.length}`,
             game_id: gameId,
             team_name: currentTeam,
+            player_number: playerNumber,
             player_name: playerName,
+            minutes,
+            is_starter: isStarter,
             points,
             rebounds,
             assists,
