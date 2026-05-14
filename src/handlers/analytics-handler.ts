@@ -2,8 +2,9 @@ import { Request, Response } from 'express';
 
 import { uploads } from '../services/upload-store';
 import { playerStats } from '../services/player-stats-store';
+import { extractTextFromPdf } from '../services/pdf-service';
 
-export const processAnalytics = (
+export const processAnalytics = async (
     req: Request,
     res: Response,
 ) => {
@@ -36,6 +37,10 @@ export const processAnalytics = (
     }
 
     const now = new Date().toISOString();
+    const extractedText = await extractTextFromPdf(upload.file_path);
+
+    console.log('Extracted PDF text:');
+    console.log(extractedText);
 
     const mockStats = [
         {
