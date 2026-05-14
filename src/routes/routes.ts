@@ -1,11 +1,13 @@
 import {Express} from 'express';
+import {upload} from "../services/multer-config";
 
 import {
     getUploadById,
     uploadStats
 } from '../handlers/upload-handler';
 
-import {upload} from "../services/multer-config";
+import { processAnalytics } from '../handlers/analytics-handler';
+
 
 
 export const registerRoutes = (app: Express) => {
@@ -20,5 +22,7 @@ export const registerRoutes = (app: Express) => {
     app.post('/uploads',
         upload.single('file'),
         uploadStats);
+
+    app.post('/analytics/process', processAnalytics);
 }
 
