@@ -6,7 +6,10 @@ import {
     uploadStats
 } from '../handlers/upload-handler';
 
-import { processAnalytics } from '../handlers/analytics-handler';
+import {
+    getPlayerStatsByGameId,
+    processAnalytics
+} from '../handlers/analytics-handler';
 
 
 
@@ -23,6 +26,8 @@ export const registerRoutes = (app: Express) => {
         upload.single('file'),
         uploadStats);
 
+    app.get('/analytics/games/:id/players', getPlayerStatsByGameId);
     app.post('/analytics/process', processAnalytics);
+
 }
 

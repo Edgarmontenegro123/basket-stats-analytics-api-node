@@ -72,3 +72,14 @@ export const processAnalytics = (
         player_stats: mockStats,
     });
 };
+
+export const getPlayerStatsByGameId = (
+    req: Request,
+    res: Response,
+) => {
+    const { id } = req.params;
+
+    const stats = playerStats.filter((item) => item.game_id === id);
+
+    res.status(200).json(stats);
+};
