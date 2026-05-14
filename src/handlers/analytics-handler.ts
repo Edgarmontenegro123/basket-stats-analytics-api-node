@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { uploads } from '../services/upload-store';
 import { playerStats } from '../services/player-stats-store';
 import { extractTextFromPdf } from '../services/pdf-service';
+import { parsePlayerStatsFromText } from '../services/player-stats-parser';
 
 export const processAnalytics = async (
     req: Request,
@@ -42,39 +43,19 @@ export const processAnalytics = async (
     console.log('Extracted PDF text:');
     console.log(extractedText);
 
-    const mockStats = [
-        {
-            id: `${Date.now()}-1`,
-            game_id: upload.game_id,
-            team_name: 'Mock Team',
-            player_name: 'Player One',
-            points: 18,
-            rebounds: 7,
-            assists: 4,
-            created_at: now,
-            updated_at: now,
-        },
-        {
-            id: `${Date.now()}-2`,
-            game_id: upload.game_id,
-            team_name: 'Mock Team',
-            player_name: 'Player Two',
-            points: 12,
-            rebounds: 5,
-            assists: 8,
-            created_at: now,
-            updated_at: now,
-        },
-    ];
+    const parsedStats = parsePlayerStatsFromText(
+        extractedText,
+        upload.game_id,
+    );
 
-    playerStats.push(...mockStats);
+    playerStats.push(...parsedStats);
 
     upload.status = 'processed';
     upload.processed_at = now;
 
     res.status(201).json({
         upload,
-        player_stats: mockStats,
+        player_stats: parsedStats,
     });
 };
 
