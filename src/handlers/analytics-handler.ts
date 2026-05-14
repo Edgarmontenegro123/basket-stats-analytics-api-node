@@ -1,9 +1,6 @@
 import { Request, Response } from 'express';
-
-import { uploads } from '../services/upload-store';
+import { processUploadAnalytics } from '../services/analytics-service';
 import { playerStats } from '../services/player-stats-store';
-import { extractTextFromPdf } from '../services/pdf-service';
-import { parsePlayerStatsFromText } from '../services/player-stats-parser';
 
 export const processAnalytics = async (
     req: Request,
@@ -19,44 +16,23 @@ export const processAnalytics = async (
         return;
     }
 
-    const upload = uploads.find((item) => item.id === upload_id);
+    try {
+        const result = await processUploadAnalytics(upload_id);
 
-    if (!upload) {
-        res.status(404).json({
-            error: 'upload not found',
+        res.status(201).json(result);
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(400).json({
+                error: error.message,
+            });
+
+            return;
+        }
+
+        res.status(500).json({
+            error: 'internal server error',
         });
-
-        return;
     }
-
-    if (upload.status === 'processed') {
-        res.status(400).json({
-            error: 'upload already processed',
-        });
-
-        return;
-    }
-
-    const now = new Date().toISOString();
-    const extractedText = await extractTextFromPdf(upload.file_path);
-
-    console.log('Extracted PDF text:');
-    console.log(extractedText);
-
-    const parsedStats = parsePlayerStatsFromText(
-        extractedText,
-        upload.game_id,
-    );
-
-    playerStats.push(...parsedStats);
-
-    upload.status = 'processed';
-    upload.processed_at = now;
-
-    res.status(201).json({
-        upload,
-        player_stats: parsedStats,
-    });
 };
 
 export const getPlayerStatsByGameId = (
