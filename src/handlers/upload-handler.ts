@@ -1,61 +1,74 @@
 import { Request, Response } from 'express';
+import { createUpload, getUploadById as findUploadById } from '../services/upload-service';
 
-import { uploads } from '../services/upload-store';
-
-export const uploadStats = (
+export const uploadStats = async (
     req: Request,
     res: Response,
 ) => {
-    const file = req.file;
-    const gameId = req.body.game_id;
+    try {
+        const file = req.file;
+        const gameId = req.body.game_id;
 
-    if (!file) {
-        res.status(400).json({
-            error: 'file is required',
+        if (!file) {
+            res.status(400).json({
+                error: 'file is required',
+            });
+
+            return;
+        }
+
+        if (!gameId) {
+            res.status(400).json({
+                error: 'game_id is required',
+            });
+
+            return;
+        }
+
+        const newUpload = await createUpload({
+            id: Date.now().toString(),
+            game_id: gameId,
+            file_name: file.originalname,
+            file_type: file.mimetype,
+            file_path: file.path,
+            status: 'uploaded',
+            uploaded_at: new Date(),
+            processed_at: null,
         });
 
-        return;
-    }
+        res.status(201).json(newUpload);
+    } catch (error) {
+        console.error(error);
 
-    if (!gameId) {
-        res.status(400).json({
-            error: 'game_id is required',
+        res.status(500).json({
+            error: 'error creating upload',
         });
-
-        return;
     }
-
-    const newUpload = {
-        id: Date.now().toString(),
-        game_id: gameId,
-        file_name: file.originalname,
-        file_type: file.mimetype,
-        file_path: file.path,
-        status: 'uploaded',
-        uploaded_at: new Date().toISOString(),
-        processed_at: null,
-    };
-
-    uploads.push(newUpload);
-
-    res.status(201).json(newUpload);
 };
 
-export const getUploadById = (
+export const getUploadById = async (
     req: Request,
     res: Response,
 ) => {
-    const { id } = req.params;
+    try {
+        const id = req.params.id as string;
 
-    const upload = uploads.find((item) => item.id === id);
+        const upload = await findUploadById(id);
 
-    if (!upload) {
-        res.status(404).json({
-            error: 'upload not found',
+        if (!upload) {
+            res.status(404).json({
+                error: 'upload not found',
+            });
+
+            return;
+        }
+
+        res.status(200).json(upload);
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: 'error getting upload',
         });
-
-        return;
     }
-
-    res.status(200).json(upload);
 };
