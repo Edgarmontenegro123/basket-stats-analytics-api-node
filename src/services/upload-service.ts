@@ -56,3 +56,21 @@ export const getUploadById = async (id: string): Promise<StatUpload | null> => {
 
     return result.rows[0] ?? null;
 };
+
+export const markUploadAsProcessed = async (
+    id: string,
+    processedAt: Date,
+): Promise<StatUpload | null> => {
+    const result = await pool.query(
+        `
+        UPDATE uploads
+        SET status = $1,
+            processed_at = $2
+        WHERE id = $3
+        RETURNING *
+        `,
+        ['processed', processedAt, id],
+    );
+
+    return result.rows[0] ?? null;
+};

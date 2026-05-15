@@ -1,14 +1,17 @@
-import { uploads } from './upload-store';
-import { playerStats } from './player-stats-store';
 import { extractTextFromPdf } from './pdf-service';
 import { parsePlayerStatsFromText } from './player-stats-parser';
-import { teamStats } from './team-stats-store';
 import { parseTeamStatsFromPlayerStats } from './team-stats-parser';
+import {
+    getUploadById,
+    markUploadAsProcessed,
+} from './upload-service';
+import { createPlayerStats } from './player-stats-service';
+import { createTeamStats } from './team-stats-service';
 
 export const processUploadAnalytics = async (
     uploadId: string,
 ) => {
-    const upload = uploads.find((item) => item.id === uploadId);
+    const upload = await getUploadById(uploadId);
 
     if (!upload) {
         throw new Error('upload not found');
@@ -20,26 +23,28 @@ export const processUploadAnalytics = async (
 
     const extractedText = await extractTextFromPdf(upload.file_path);
 
-    const parsedStats = parsePlayerStatsFromText(
+    const parsedPlayerStats = parsePlayerStatsFromText(
         extractedText,
         upload.game_id,
     );
 
-    const now = new Date().toISOString();
-
-    playerStats.push(...parsedStats);
-
     const parsedTeamStats =
-        parseTeamStatsFromPlayerStats(parsedStats);
+        parseTeamStatsFromPlayerStats(parsedPlayerStats);
 
-    teamStats.push(...parsedTeamStats);
+    const createdPlayerStats =
+        await createPlayerStats(parsedPlayerStats);
 
-    upload.status = 'processed';
-    upload.processed_at = now;
+    const createdTeamStats =
+        await createTeamStats(parsedTeamStats);
+
+    const processedUpload = await markUploadAsProcessed(
+        upload.id,
+        new Date(),
+    );
 
     return {
-        upload,
-        player_stats: parsedStats,
-        team_stats: parsedTeamStats,
+        upload: processedUpload,
+        player_stats: createdPlayerStats,
+        team_stats: createdTeamStats,
     };
 };
