@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { processUploadAnalytics } from '../services/analytics-service';
+import { getPlayerStatsByGameId as findPlayerStatsByGameId } from '../services/player-stats-service';
+import { getTeamStatsByGameId as findTeamStatsByGameId } from '../services/team-stats-service';
 import { playerStats } from '../services/player-stats-store';
 import { teamStats } from '../services/team-stats-store';
 
@@ -36,24 +38,40 @@ export const processAnalytics = async (
     }
 };
 
-export const getPlayerStatsByGameId = (
+export const getPlayerStatsByGameId = async (
     req: Request,
     res: Response,
 ) => {
-    const { id } = req.params;
+    try {
+        const gameId = req.params.id as string;
 
-    const stats = playerStats.filter((item) => item.game_id === id);
+        const stats = await findPlayerStatsByGameId(gameId);
 
-    res.status(200).json(stats);
+        res.status(200).json(stats);
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: 'error getting players stats',
+        })
+    }
 };
 
-export const getTeamStatsByGameId = (
+export const getTeamStatsByGameId = async (
     req: Request,
     res: Response,
 ) => {
-    const { id } = req.params;
+    try {
+        const gameId = req.params.id as string;
 
-    const stats = teamStats.filter((item) => item.game_id === id);
+        const stats = await findTeamStatsByGameId(gameId);
 
-    res.status(200).json(stats);
+        res.status(200).json(stats);
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: 'error getting teams stats',
+        })
+    }
 };
