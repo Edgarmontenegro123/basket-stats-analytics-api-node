@@ -1,7 +1,17 @@
 import { PlayerStat } from '../models/player-stat';
 
-const isTeamName = (line: string): boolean => {
-    return line === 'Almendra Basketball' || line === 'Pegasos';
+
+const isTableHeader = (line: string): boolean => {
+    return line.includes('Nº') && line.includes('Jugador');
+};
+
+const isIgnoredLine = (line: string): boolean => {
+    return (
+        line.startsWith('--') ||
+        line.includes('basketstatsapp.com') ||
+        line.startsWith('Total') ||
+        isTableHeader(line)
+    );
 };
 
 const startsWithPlayerNumber = (line: string): boolean => {
@@ -28,7 +38,10 @@ export const parsePlayerStatsFromText = (
     let currentPlayerLine = '';
 
     for (const line of lines) {
-        if (isTeamName(line)) {
+        const nextLineIndex = lines.indexOf(line) + 1;
+        const nextLine = lines[nextLineIndex];
+
+        if (nextLine && isTableHeader(nextLine)) {
             currentTeam = line;
             currentPlayerLine = '';
             continue;
@@ -38,7 +51,7 @@ export const parsePlayerStatsFromText = (
             continue;
         }
 
-        if (line.startsWith('Total')) {
+        if (isIgnoredLine(line)) {
             currentPlayerLine = '';
             continue;
         }
