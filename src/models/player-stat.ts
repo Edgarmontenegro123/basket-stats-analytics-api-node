@@ -9,6 +9,7 @@ export type PlayerStat = {
     points: number;
     rebounds: number;
     assists: number;
+    turnovers: number;
     created_at: string;
     updated_at: string;
 };

@@ -7,6 +7,7 @@ export const parseTeamStatsFromPlayerStats = (
         points: number;
         rebounds: number;
         assists: number;
+        turnovers: number;
     }[],
 ): TeamStat[] => {
     const now = new Date().toISOString();
@@ -23,7 +24,7 @@ export const parseTeamStatsFromPlayerStats = (
                 points: player.points,
                 rebounds: player.rebounds,
                 assists: player.assists,
-                turnovers: 0,
+                turnovers: player.turnovers,
                 created_at: now,
                 updated_at: now,
             });
@@ -34,6 +35,7 @@ export const parseTeamStatsFromPlayerStats = (
         existingTeamStat.points += player.points;
         existingTeamStat.rebounds += player.rebounds;
         existingTeamStat.assists += player.assists;
+        existingTeamStat.turnovers += player.turnovers;
         existingTeamStat.updated_at = now;
     }
 
