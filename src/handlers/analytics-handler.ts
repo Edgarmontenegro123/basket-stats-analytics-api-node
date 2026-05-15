@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { processUploadAnalytics } from '../services/analytics-service';
 import { playerStats } from '../services/player-stats-store';
+import { teamStats } from '../services/team-stats-store';
 
 export const processAnalytics = async (
     req: Request,
@@ -42,6 +43,17 @@ export const getPlayerStatsByGameId = (
     const { id } = req.params;
 
     const stats = playerStats.filter((item) => item.game_id === id);
+
+    res.status(200).json(stats);
+};
+
+export const getTeamStatsByGameId = (
+    req: Request,
+    res: Response,
+) => {
+    const { id } = req.params;
+
+    const stats = teamStats.filter((item) => item.game_id === id);
 
     res.status(200).json(stats);
 };

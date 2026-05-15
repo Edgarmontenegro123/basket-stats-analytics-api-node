@@ -2,6 +2,8 @@ import { uploads } from './upload-store';
 import { playerStats } from './player-stats-store';
 import { extractTextFromPdf } from './pdf-service';
 import { parsePlayerStatsFromText } from './player-stats-parser';
+import { teamStats } from './team-stats-store';
+import { parseTeamStatsFromPlayerStats } from './team-stats-parser';
 
 export const processUploadAnalytics = async (
     uploadId: string,
@@ -27,11 +29,17 @@ export const processUploadAnalytics = async (
 
     playerStats.push(...parsedStats);
 
+    const parsedTeamStats =
+        parseTeamStatsFromPlayerStats(parsedStats);
+
+    teamStats.push(...parsedTeamStats);
+
     upload.status = 'processed';
     upload.processed_at = now;
 
     return {
         upload,
         player_stats: parsedStats,
+        team_stats: parsedTeamStats,
     };
 };
