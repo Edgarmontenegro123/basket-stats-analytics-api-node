@@ -94,12 +94,16 @@ export const parsePlayerStatsFromText = (
         const rebounds = Number(parts[minutesIndex + 16]);
         const assists = Number(parts[minutesIndex + 17]);
         const turnovers = Number(parts[minutesIndex + 18]);
+        const steals = Number(parts[minutesIndex + 19]);
+        const blocks = Number(parts[minutesIndex + 20]);
 
         if (
             Number.isNaN(points) ||
             Number.isNaN(rebounds) ||
             Number.isNaN(assists) ||
-            Number.isNaN(turnovers)
+            Number.isNaN(turnovers) ||
+            Number.isNaN(steals) ||
+            Number.isNaN(blocks)
         ) {
             currentPlayerLine = '';
             continue;
@@ -117,6 +121,8 @@ export const parsePlayerStatsFromText = (
             rebounds,
             assists,
             turnovers,
+            steals,
+            blocks,
             created_at: now,
             updated_at: now,
         });

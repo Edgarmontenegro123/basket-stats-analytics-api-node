@@ -10,6 +10,8 @@ export type PlayerStat = {
     rebounds: number;
     assists: number;
     turnovers: number;
+    steals: number;
+    blocks: number;
     created_at: string;
     updated_at: string;
 };
