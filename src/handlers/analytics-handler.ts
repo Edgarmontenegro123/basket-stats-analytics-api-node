@@ -2,8 +2,7 @@ import { Request, Response } from 'express';
 import { processUploadAnalytics } from '../services/analytics-service';
 import { getPlayerStatsByGameId as findPlayerStatsByGameId } from '../services/player-stats-service';
 import { getTeamStatsByGameId as findTeamStatsByGameId } from '../services/team-stats-service';
-import { playerStats } from '../services/player-stats-store';
-import { teamStats } from '../services/team-stats-store';
+
 
 export const processAnalytics = async (
     req: Request,
