@@ -5,8 +5,15 @@ import {
     getUploadById,
     markUploadAsProcessed,
 } from './upload-service';
-import { createPlayerStats } from './player-stats-service';
-import { createTeamStats } from './team-stats-service';
+import {
+    createPlayerStats,
+    getPlayerStatsByGameId,
+} from './player-stats-service';
+
+import {
+    createTeamStats,
+    getTeamStatsByGameId,
+} from './team-stats-service';
 
 export const processUploadAnalytics = async (
     uploadId: string,
@@ -19,6 +26,13 @@ export const processUploadAnalytics = async (
 
     if (upload.status === 'processed') {
         throw new Error('upload already processed');
+    }
+
+    const existingPlayerStats = await getPlayerStatsByGameId(upload.game_id);
+    const existingTeamStats = await getTeamStatsByGameId(upload.game_id);
+
+    if (existingPlayerStats.length > 0 || existingTeamStats.length > 0) {
+        throw new Error('stats already processed for this game');
     }
 
     const extractedText = await extractTextFromPdf(upload.file_path);
