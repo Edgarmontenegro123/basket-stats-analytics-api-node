@@ -1,6 +1,8 @@
 import { extractTextFromPdf } from './pdf-service';
 import { parsePlayerStatsFromText } from './player-stats-parser';
 import { parseTeamStatsFromPlayerStats } from './team-stats-parser';
+import { normaliseText } from '../helpers/normalise-text'
+import { getGameDetailsById } from './management-api-service';
 import {
     getUploadById,
     markUploadAsProcessed,
@@ -35,7 +37,22 @@ export const processUploadAnalytics = async (
         throw new Error('stats already processed for this game');
     }
 
+    const gameDetails = await getGameDetailsById(upload.game_id);
     const extractedText = await extractTextFromPdf(upload.file_path);
+
+    const normalisedText = normaliseText(extractedText);
+    const normalisedHomeTeamName = normaliseText(gameDetails.home_team_name);
+    const normalisedAwayTeamName = normaliseText(gameDetails.away_team_name);
+
+    const pdfMatchesGameTeams =
+        normalisedText.includes(normalisedHomeTeamName) &&
+        normalisedText.includes(normalisedAwayTeamName);
+
+    if (!pdfMatchesGameTeams) {
+        throw new Error(
+            'uploaded PDF does not match the selected game teams',
+        );
+    }
 
     const parsedPlayerStats = parsePlayerStatsFromText(
         extractedText,
