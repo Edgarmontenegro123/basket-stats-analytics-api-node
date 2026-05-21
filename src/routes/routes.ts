@@ -2,6 +2,7 @@ import {Express} from 'express';
 import {upload} from "../services/multer-config";
 
 import {
+    getUploads,
     getUploadById,
     uploadStats
 } from '../handlers/upload-handler';
@@ -22,6 +23,7 @@ export const registerRoutes = (app: Express) => {
         });
     });
 
+    app.get('/uploads', getUploads);
     app.get('/uploads/:id', getUploadById);
     app.post('/uploads',
         upload.single('file'),

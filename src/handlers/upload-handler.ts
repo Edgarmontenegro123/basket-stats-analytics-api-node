@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createUpload, getUploadById as findUploadById } from '../services/upload-service';
+import { createUpload, getUploads as findUploads,getUploadById as findUploadById } from '../services/upload-service';
 
 export const uploadStats = async (
     req: Request,
@@ -42,6 +42,23 @@ export const uploadStats = async (
 
         res.status(500).json({
             error: 'error creating upload',
+        });
+    }
+};
+
+export const getUploads = async (
+    _req: Request,
+    res: Response,
+) => {
+    try {
+        const uploads = await findUploads();
+
+        res.status(200).json(uploads);
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: 'error getting uploads',
         });
     }
 };

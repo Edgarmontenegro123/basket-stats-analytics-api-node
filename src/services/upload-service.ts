@@ -74,3 +74,15 @@ export const markUploadAsProcessed = async (
 
     return result.rows[0] ?? null;
 };
+
+export const getUploads = async (): Promise<StatUpload[]> => {
+    const result = await pool.query(
+        `
+        SELECT *
+        FROM uploads
+        ORDER BY uploaded_at DESC
+        `
+    );
+
+    return result.rows;
+};
