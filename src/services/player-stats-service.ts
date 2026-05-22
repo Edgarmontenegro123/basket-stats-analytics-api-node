@@ -106,16 +106,36 @@ export const getTopPlayersByStat = async (
     return result.rows;
 };
 
-/*
-export const getTopScorers = async (limit: number = 5) => {
+export const getAggregatedPlayersRanking = async (
+    stat: PlayerRankingStat,
+    limit: number = 10,
+) => {
+    const allowedStats: PlayerRankingStat[] = [
+        'points',
+        'rebounds',
+        'assists',
+        'steals',
+        'blocks',
+    ];
+
+    if (!allowedStats.includes(stat)) {
+        throw new Error('invalid stat');
+    }
+
     const query = `
-        SELECT *
+        SELECT
+            player_name,
+            team_name,
+            COUNT(DISTINCT game_id) AS games_played,
+            SUM(${stat}) AS total,
+            ROUND(AVG(${stat})::numeric, 2) AS average
         FROM player_stats
-        ORDER BY points DESC
+        GROUP BY player_name, team_name
+        ORDER BY total DESC
         LIMIT $1
     `;
 
     const result = await pool.query(query, [limit]);
 
     return result.rows;
-};*/
+};

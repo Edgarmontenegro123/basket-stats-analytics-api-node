@@ -1,8 +1,14 @@
 import { Request, Response } from 'express';
-import { processUploadAnalytics } from '../services/analytics-service';
-import { getPlayerStatsByGameId as findPlayerStatsByGameId, getTopPlayersByStat } from '../services/player-stats-service';
-import { getTeamStatsByGameId as findTeamStatsByGameId } from '../services/team-stats-service';
 import {PlayerRankingStat} from '../models/player-stat';
+import { processUploadAnalytics } from '../services/analytics-service';
+import {
+    getTeamStatsByGameId as findTeamStatsByGameId
+} from '../services/team-stats-service';
+import {
+    getPlayerStatsByGameId as findPlayerStatsByGameId,
+    getTopPlayersByStat,
+    getAggregatedPlayersRanking,
+} from '../services/player-stats-service';
 
 
 export const processAnalytics = async (
@@ -102,6 +108,37 @@ export const getTopPlayersRanking  = async (
 
         res.status(500).json({
             error: 'error getting player rankings',
+        });
+    }
+};
+
+export const getAggregatedPlayersRankingHandler = async (
+    req: Request,
+    res: Response,
+) => {
+    try {
+        const stat = req.query.stat as PlayerRankingStat;
+        const limit = Number(req.query.limit) || 10;
+
+        const rankings = await getAggregatedPlayersRanking(
+            stat,
+            limit,
+        );
+
+        res.status(200).json(rankings);
+    } catch (error) {
+        console.error(error);
+
+        if (error instanceof Error) {
+            res.status(400).json({
+                error: error.message,
+            });
+
+            return;
+        }
+
+        res.status(500).json({
+            error: 'error getting aggregated player rankings',
         });
     }
 };

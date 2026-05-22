@@ -11,6 +11,7 @@ import {
     getPlayerStatsByGameId,
     getTeamStatsByGameId,
     getTopPlayersRanking,
+    getAggregatedPlayersRankingHandler,
     processAnalytics
 } from '../handlers/analytics-handler';
 
@@ -33,6 +34,7 @@ export const registerRoutes = (app: Express) => {
     app.get('/analytics/games/:id/players', getPlayerStatsByGameId);
     app.get('/analytics/players/rankings', getTopPlayersRanking);
     app.get('/analytics/games/:id/teams', getTeamStatsByGameId);
+    app.get('/analytics/players/aggregated-rankings', getAggregatedPlayersRankingHandler);
     app.post('/analytics/process', processAnalytics);
 
 }
