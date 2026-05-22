@@ -77,3 +77,16 @@ export const getPlayerStatsByGameId = async (
 
     return result.rows;
 };
+
+export const getTopScorers = async (limit: number = 5) => {
+    const query = `
+        SELECT *
+        FROM player_stats
+        ORDER BY points DESC
+        LIMIT $1
+    `;
+
+    const result = await pool.query(query, [limit]);
+
+    return result.rows;
+};

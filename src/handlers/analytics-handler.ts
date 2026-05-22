@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { processUploadAnalytics } from '../services/analytics-service';
-import { getPlayerStatsByGameId as findPlayerStatsByGameId } from '../services/player-stats-service';
+import { getPlayerStatsByGameId as findPlayerStatsByGameId, getTopScorers as findTopScorers } from '../services/player-stats-service';
 import { getTeamStatsByGameId as findTeamStatsByGameId } from '../services/team-stats-service';
 
 
@@ -72,5 +72,24 @@ export const getTeamStatsByGameId = async (
         res.status(500).json({
             error: 'error getting teams stats',
         })
+    }
+};
+
+export const getTopScorers = async (
+    req: Request,
+    res: Response,
+) => {
+    try {
+        const limit = Number(req.query.limit) || 5;
+
+        const scorers = await findTopScorers(limit);
+
+        res.status(200).json(scorers);
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: 'error getting top scorers',
+        });
     }
 };
