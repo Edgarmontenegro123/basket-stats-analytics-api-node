@@ -1,5 +1,5 @@
 import { pool } from '../db/pool';
-import { PlayerStat } from '../models/player-stat';
+import { PlayerStat, PlayerRankingStat } from '../models/player-stat';
 
 export const createPlayerStats = async (
     stats: PlayerStat[],
@@ -78,6 +78,35 @@ export const getPlayerStatsByGameId = async (
     return result.rows;
 };
 
+export const getTopPlayersByStat = async (
+    stat: PlayerRankingStat,
+    limit: number = 5,
+): Promise<PlayerStat[]> => {
+    const allowedStats: PlayerRankingStat[] = [
+        'points',
+        'rebounds',
+        'assists',
+        'steals',
+        'blocks',
+    ];
+
+    if (!allowedStats.includes(stat)) {
+        throw new Error('invalid stat');
+    }
+
+    const query = `
+        SELECT *
+        FROM player_stats
+        ORDER BY ${stat} DESC
+        LIMIT $1
+    `;
+
+    const result = await pool.query(query, [limit]);
+
+    return result.rows;
+};
+
+/*
 export const getTopScorers = async (limit: number = 5) => {
     const query = `
         SELECT *
@@ -89,4 +118,4 @@ export const getTopScorers = async (limit: number = 5) => {
     const result = await pool.query(query, [limit]);
 
     return result.rows;
-};
+};*/

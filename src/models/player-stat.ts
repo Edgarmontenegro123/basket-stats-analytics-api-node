@@ -1,4 +1,4 @@
-export type PlayerStat = {
+export interface PlayerStat {
     id: string;
     game_id: string;
     team_name: string;
@@ -14,4 +14,12 @@ export type PlayerStat = {
     blocks: number;
     created_at: string;
     updated_at: string;
-};
+}
+
+export type PlayerRankingStat =
+    | 'points'
+    | 'rebounds'
+    | 'assists'
+    | 'steals'
+    | 'blocks';
+

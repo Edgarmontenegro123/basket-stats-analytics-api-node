@@ -10,7 +10,7 @@ import {
 import {
     getPlayerStatsByGameId,
     getTeamStatsByGameId,
-    getTopScorers,
+    getTopPlayersRanking,
     processAnalytics
 } from '../handlers/analytics-handler';
 
@@ -31,7 +31,7 @@ export const registerRoutes = (app: Express) => {
         uploadStats);
 
     app.get('/analytics/games/:id/players', getPlayerStatsByGameId);
-    app.get('/analytics/players/top-scorers', getTopScorers);
+    app.get('/analytics/players/rankings', getTopPlayersRanking);
     app.get('/analytics/games/:id/teams', getTeamStatsByGameId);
     app.post('/analytics/process', processAnalytics);
 
