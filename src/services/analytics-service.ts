@@ -2,7 +2,7 @@ import { extractTextFromPdf } from './pdf-service';
 import { parsePlayerStatsFromText } from './player-stats-parser';
 import { parseTeamStatsFromPlayerStats } from './team-stats-parser';
 import { normaliseText } from '../helpers/normalise-text'
-import { getGameDetailsById } from './management-api-service';
+import { getGameDetailsById, updateGameResult } from './management-api-service';
 import {
     getUploadById,
     markUploadAsProcessed,
@@ -68,6 +68,24 @@ export const processUploadAnalytics = async (
     const createdTeamStats =
         await createTeamStats(parsedTeamStats);
 
+    const homeTeamStats = createdTeamStats.find(
+        (teamStat) => normaliseText(teamStat.team_name) === normalisedHomeTeamName,
+    );
+
+    const awayTeamStats = createdTeamStats.find(
+        (teamStat) => normaliseText(teamStat.team_name) === normalisedAwayTeamName,
+    );
+
+    if (!homeTeamStats || !awayTeamStats) {
+        throw new Error('could not calculate game result from team stats');
+    }
+
+    const updatedGame = await updateGameResult(
+        upload.game_id,
+        homeTeamStats.points,
+        awayTeamStats.points,
+    );
+
     const processedUpload = await markUploadAsProcessed(
         upload.id,
         new Date(),
@@ -75,6 +93,7 @@ export const processUploadAnalytics = async (
 
     return {
         upload: processedUpload,
+        game: updatedGame,
         player_stats: createdPlayerStats,
         team_stats: createdTeamStats,
     };
