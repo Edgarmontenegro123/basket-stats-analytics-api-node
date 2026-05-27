@@ -139,3 +139,38 @@ export const getAggregatedPlayersRanking = async (
 
     return result.rows;
 };
+
+export const getPlayerSummaryByName = async (
+    playerName: string,
+) => {
+    const result = await pool.query(
+        `
+        SELECT
+            player_name,
+            team_name,
+            COUNT(DISTINCT game_id) AS games_played,
+            SUM(points) AS total_points,
+            SUM(rebounds) AS total_rebounds,
+            SUM(assists) AS total_assists,
+            SUM(turnovers) AS total_turnovers,
+            SUM(steals) AS total_steals,
+            SUM(blocks) AS total_blocks,
+            ROUND(AVG(points)::numeric, 2) AS average_points,
+            ROUND(AVG(rebounds)::numeric, 2) AS average_rebounds,
+            ROUND(AVG(assists)::numeric, 2) AS average_assists,
+            ROUND(AVG(turnovers)::numeric, 2) AS average_turnovers,
+            ROUND(AVG(steals)::numeric, 2) AS average_steals,
+            ROUND(AVG(blocks)::numeric, 2) AS average_blocks
+        FROM player_stats
+        WHERE LOWER(player_name) = LOWER($1)
+        GROUP BY player_name, team_name
+        `,
+        [playerName],
+    );
+
+    if (result.rows.length === 0) {
+        return null;
+    }
+
+    return result.rows[0];
+};

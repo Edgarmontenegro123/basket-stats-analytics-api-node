@@ -8,6 +8,7 @@ import {
     getPlayerStatsByGameId as findPlayerStatsByGameId,
     getTopPlayersByStat,
     getAggregatedPlayersRanking,
+    getPlayerSummaryByName,
 } from '../services/player-stats-service';
 
 
@@ -139,6 +140,41 @@ export const getAggregatedPlayersRankingHandler = async (
 
         res.status(500).json({
             error: 'error getting aggregated player rankings',
+        });
+    }
+};
+
+export const getPlayerSummaryHandler = async (
+    req: Request,
+    res: Response,
+) => {
+    try {
+        const playerName = decodeURIComponent(req.params.playerName as string);
+
+        if (!playerName) {
+            res.status(400).json({
+                error: 'playerName is required',
+            });
+
+            return;
+        }
+
+        const summary = await getPlayerSummaryByName(playerName);
+
+        res.status(200).json(summary);
+    } catch (error) {
+        console.error(error);
+
+        if (error instanceof Error) {
+            res.status(400).json({
+                error: error.message,
+            });
+
+            return;
+        }
+
+        res.status(500).json({
+            error: 'error getting player summary',
         });
     }
 };
