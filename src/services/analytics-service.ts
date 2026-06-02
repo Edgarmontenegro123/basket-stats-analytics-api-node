@@ -1,21 +1,21 @@
-import { extractTextFromPdf } from './pdf-service';
-import { parsePlayerStatsFromText } from './player-stats-parser';
-import { parseTeamStatsFromPlayerStats } from './team-stats-parser';
-import { normaliseText } from '../helpers/normalise-text'
-import { getGameDetailsById, updateGameResult } from './management-api-service';
+import { extractTextFromPdf } from './pdf-service'
+import { parsePlayerStatsFromText } from './player-stats-parser'
+import { parseTeamStatsFromPlayerStats } from './team-stats-parser'
+import { teamNamesMatch } from '../helpers/team-name-match'
+import { getGameDetailsById, updateGameResult } from './management-api-service'
 import {
     getUploadById,
     markUploadAsProcessed,
-} from './upload-service';
+} from './upload-service'
 import {
     createPlayerStats,
     getPlayerStatsByGameId,
-} from './player-stats-service';
+} from './player-stats-service'
 
 import {
     createTeamStats,
     getTeamStatsByGameId,
-} from './team-stats-service';
+} from './team-stats-service'
 
 export const processUploadAnalytics = async (
     uploadId: string,
@@ -40,13 +40,9 @@ export const processUploadAnalytics = async (
     const gameDetails = await getGameDetailsById(upload.game_id);
     const extractedText = await extractTextFromPdf(upload.file_path);
 
-    const normalisedText = normaliseText(extractedText);
-    const normalisedHomeTeamName = normaliseText(gameDetails.home_team_name);
-    const normalisedAwayTeamName = normaliseText(gameDetails.away_team_name);
-
     const pdfMatchesGameTeams =
-        normalisedText.includes(normalisedHomeTeamName) &&
-        normalisedText.includes(normalisedAwayTeamName);
+        teamNamesMatch(extractedText, gameDetails.home_team_name) &&
+        teamNamesMatch(extractedText, gameDetails.away_team_name);
 
     if (!pdfMatchesGameTeams) {
         throw new Error(
@@ -69,11 +65,11 @@ export const processUploadAnalytics = async (
         await createTeamStats(parsedTeamStats);
 
     const homeTeamStats = createdTeamStats.find(
-        (teamStat) => normaliseText(teamStat.team_name) === normalisedHomeTeamName,
+        (teamStat) => teamNamesMatch(teamStat.team_name, gameDetails.home_team_name),
     );
 
     const awayTeamStats = createdTeamStats.find(
-        (teamStat) => normaliseText(teamStat.team_name) === normalisedAwayTeamName,
+        (teamStat) => teamNamesMatch(teamStat.team_name, gameDetails.away_team_name),
     );
 
     if (!homeTeamStats || !awayTeamStats) {
