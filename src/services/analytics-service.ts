@@ -16,7 +16,7 @@ import {
     createTeamStats,
     getTeamStatsByGameId,
 } from './team-stats-service'
-import {normaliseText} from "../helpers/normalise-text";
+
 
 export const processUploadAnalytics = async (
     uploadId: string,
@@ -73,17 +73,6 @@ export const processUploadAnalytics = async (
         (teamStat) => teamNamesMatch(teamStat.team_name, gameDetails.away_team_name),
     );
 
-    console.log('Game home team:', gameDetails.home_team_name);
-    console.log('Game away team:', gameDetails.away_team_name);
-
-    console.log(
-        'Created team stats:',
-        createdTeamStats.map((teamStat) => ({
-            original: teamStat.team_name,
-            normalised: normaliseText(teamStat.team_name),
-            points: teamStat.points,
-        })),
-    );
     if (!homeTeamStats || !awayTeamStats) {
         throw new Error('could not calculate game result from team stats');
     }
