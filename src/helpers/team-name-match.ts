@@ -1,11 +1,11 @@
-import { normaliseText } from './normalise-text';
+import { normaliseText } from './normalise-text'
 
 export const teamNamesMatch = (
     firstName: string,
     secondName: string,
 ): boolean => {
-    const first = normaliseText(firstName);
-    const second = normaliseText(secondName);
+    const first = normaliseText(firstName)
+    const second = normaliseText(secondName)
 
     return (
         first === second ||
