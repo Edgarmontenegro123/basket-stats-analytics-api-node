@@ -36,8 +36,8 @@ export const registerRoutes = (app: Express) => {
     app.get('/analytics/games/:id/players', getPlayerStatsByGameId)
     app.get('/analytics/games/:id/teams', getTeamStatsByGameId)
     app.get('/analytics/players/rankings', getTopPlayersRanking)
-    app.get('/analytics/players/:playerName/summary', getPlayerSummaryHandler)
     app.get('/analytics/players/aggregated-rankings', getAggregatedPlayersRankingHandler)
+    app.get('/analytics/players/:playerName/summary', getPlayerSummaryHandler)
 
     app.post('/analytics/process', authMiddleware, processAnalytics)
 
