@@ -1,5 +1,6 @@
 import {Express} from 'express'
 import { authMiddleware } from '../middleware/auth-middleware'
+import {authoriseRoles} from '../middleware/authorise-roles'
 import {upload} from '../services/multer-config'
 import {
     getUploads,
@@ -30,6 +31,7 @@ export const registerRoutes = (app: Express) => {
 
     app.post('/uploads',
         authMiddleware,
+        authoriseRoles('admin', 'coach', 'dt'),
         upload.single('file'),
         uploadStats)
 
@@ -39,7 +41,12 @@ export const registerRoutes = (app: Express) => {
     app.get('/analytics/players/aggregated-rankings', getAggregatedPlayersRankingHandler)
     app.get('/analytics/players/:playerName/summary', getPlayerSummaryHandler)
 
-    app.post('/analytics/process', authMiddleware, processAnalytics)
+    app.post(
+        '/analytics/process',
+        authMiddleware,
+        authoriseRoles('admin', 'coach', 'dt'),
+        processAnalytics,
+    )
 
 }
 
