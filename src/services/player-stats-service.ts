@@ -1,5 +1,19 @@
-import { pool } from '../db/pool';
-import { PlayerStat, PlayerRankingStat } from '../models/player-stat';
+import { pool } from '../db/pool'
+import { PlayerStat, PlayerRankingStat } from '../models/player-stat'
+import { normaliseText } from '../helpers/normalise-text'
+
+const getPlayerNameVariants = (playerName: string) => {
+    const normalisedName = normaliseText(playerName)
+    const parts = normalisedName.split(' ').filter(Boolean)
+
+    if (parts.length < 2) {
+        return [normalisedName]
+    }
+
+    const reversedName = [...parts].reverse().join(' ')
+
+    return [normalisedName, reversedName]
+}
 
 export const createPlayerStats = async (
     stats: PlayerStat[],
@@ -143,34 +157,87 @@ export const getAggregatedPlayersRanking = async (
 export const getPlayerSummaryByName = async (
     playerName: string,
 ) => {
+    const playerNameVariants = getPlayerNameVariants(playerName)
+
     const result = await pool.query(
         `
         SELECT
             player_name,
             team_name,
-            COUNT(DISTINCT game_id) AS games_played,
-            SUM(points) AS total_points,
-            SUM(rebounds) AS total_rebounds,
-            SUM(assists) AS total_assists,
-            SUM(turnovers) AS total_turnovers,
-            SUM(steals) AS total_steals,
-            SUM(blocks) AS total_blocks,
-            ROUND(AVG(points)::numeric, 2) AS average_points,
-            ROUND(AVG(rebounds)::numeric, 2) AS average_rebounds,
-            ROUND(AVG(assists)::numeric, 2) AS average_assists,
-            ROUND(AVG(turnovers)::numeric, 2) AS average_turnovers,
-            ROUND(AVG(steals)::numeric, 2) AS average_steals,
-            ROUND(AVG(blocks)::numeric, 2) AS average_blocks
+            game_id,
+            points,
+            rebounds,
+            assists,
+            turnovers,
+            steals,
+            blocks
         FROM player_stats
-        WHERE LOWER(player_name) = LOWER($1)
-        GROUP BY player_name, team_name
         `,
-        [playerName],
-    );
+    )
 
-    if (result.rows.length === 0) {
-        return null;
+    const matchingStats = result.rows.filter((stat) => {
+        const normalisedPlayerName = normaliseText(stat.player_name)
+
+        return playerNameVariants.includes(normalisedPlayerName)
+    })
+
+    if (matchingStats.length === 0) {
+        return null
     }
 
-    return result.rows[0];
-};
+    const gamesPlayed = new Set(
+        matchingStats.map((stat) => stat.game_id),
+    ).size
+
+    const totalPoints = matchingStats.reduce(
+        (total, stat) => total + Number(stat.points || 0),
+        0,
+    )
+
+    const totalRebounds = matchingStats.reduce(
+        (total, stat) => total + Number(stat.rebounds || 0),
+        0,
+    )
+
+    const totalAssists = matchingStats.reduce(
+        (total, stat) => total + Number(stat.assists || 0),
+        0,
+    )
+
+    const totalTurnovers = matchingStats.reduce(
+        (total, stat) => total + Number(stat.turnovers || 0),
+        0,
+    )
+
+    const totalSteals = matchingStats.reduce(
+        (total, stat) => total + Number(stat.steals || 0),
+        0,
+    )
+
+    const totalBlocks = matchingStats.reduce(
+        (total, stat) => total + Number(stat.blocks || 0),
+        0,
+    )
+
+    const roundAverage = (value: number) => {
+        return Number(value.toFixed(2))
+    }
+
+    return {
+        player_name: matchingStats[0].player_name,
+        team_name: matchingStats[0].team_name,
+        games_played: gamesPlayed,
+        total_points: totalPoints,
+        total_rebounds: totalRebounds,
+        total_assists: totalAssists,
+        total_turnovers: totalTurnovers,
+        total_steals: totalSteals,
+        total_blocks: totalBlocks,
+        average_points: roundAverage(totalPoints / gamesPlayed),
+        average_rebounds: roundAverage(totalRebounds / gamesPlayed),
+        average_assists: roundAverage(totalAssists / gamesPlayed),
+        average_turnovers: roundAverage(totalTurnovers / gamesPlayed),
+        average_steals: roundAverage(totalSteals / gamesPlayed),
+        average_blocks: roundAverage(totalBlocks / gamesPlayed),
+    }
+}
