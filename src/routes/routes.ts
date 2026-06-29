@@ -13,6 +13,7 @@ import {
     getTopPlayersRanking,
     getAggregatedPlayersRankingHandler,
     getTeamStatsByGameId,
+    deleteGameStatsHandler,
     processAnalytics
 } from '../handlers/analytics-handler'
 
@@ -37,6 +38,14 @@ export const registerRoutes = (app: Express) => {
 
     app.get('/analytics/games/:id/players', getPlayerStatsByGameId)
     app.get('/analytics/games/:id/teams', getTeamStatsByGameId)
+
+    app.delete(
+        '/analytics/games/:id/stats',
+        authMiddleware,
+        authoriseRoles('admin', 'service'),
+        deleteGameStatsHandler,
+    )
+
     app.get('/analytics/players/rankings', getTopPlayersRanking)
     app.get('/analytics/players/aggregated-rankings', getAggregatedPlayersRankingHandler)
     app.get('/analytics/players/:playerName/summary', getPlayerSummaryHandler)
