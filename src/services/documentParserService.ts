@@ -1,6 +1,7 @@
 import csvParser from 'csv-parser'
 import ExcelJS from 'exceljs'
 import { Readable } from 'stream'
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters'
 
 export const parseCsvBuffer = async (buffer: Buffer): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -37,4 +38,14 @@ export const parseExcelBuffer = async (buffer: Buffer): Promise<string> => {
     })
 
     return rowsText.join('\n')
+}
+
+export const splitTextIntoChunks = async (text: string): Promise<string[]> => {
+    const splitter = new RecursiveCharacterTextSplitter({
+        chunkSize: 1000,
+        chunkOverlap: 200
+    })
+
+    const docs = await splitter.createDocuments([text])
+    return docs.map((doc) => doc.pageContent)
 }
