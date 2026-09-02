@@ -16,7 +16,7 @@ import {
     deleteGameStatsHandler,
     processAnalytics
 } from '../handlers/analytics-handler'
-
+import {handleAnalyticsChat} from '../handlers/analytics-chat-handler'
 
 
 export const registerRoutes = (app: Express) => {
@@ -55,6 +55,14 @@ export const registerRoutes = (app: Express) => {
         authMiddleware,
         authoriseRoles('admin', 'coach', 'dt'),
         processAnalytics,
+    )
+
+    app.post(
+        '/analytics/chat',
+        authMiddleware,
+        authoriseRoles('admin', 'coach', 'dt'),
+        upload.single('file'),
+        handleAnalyticsChat
     )
 
 }
