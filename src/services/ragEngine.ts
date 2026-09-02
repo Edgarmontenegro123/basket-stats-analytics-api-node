@@ -1,7 +1,24 @@
 import { aiClient } from './iaService'
+import { parseCsvBuffer, parseExcelBuffer, splitTextIntoChunks } from './documentParserService'
 
-export const generateRagResponse = async (userPrompt: string, contextText: string): Promise<string> => {
+export const processDocumentBuffer = async (buffer: Buffer, fileType: string): Promise<string[]> => {
+    let rawText = ''
+
+    if (fileType === 'csv') {
+        rawText = await parseCsvBuffer(buffer)
+    } else if (fileType === 'xlsx' || fileType === 'xls') {
+        rawText = await parseExcelBuffer(buffer)
+    } else {
+        rawText = buffer.toString('utf-8')
+    }
+
+    return await splitTextIntoChunks(rawText)
+}
+
+export const generateRagResponse = async (userPrompt: string, chunks: string[]): Promise<string> => {
     try {
+        const contextText = chunks.join('\n\n---\n\n')
+
         const prompt = `
 You are an expert basketball analyst assistant for the Basket Stats app.
 Answer the user's question accurately using ONLY the following context provided from the match statistics.
