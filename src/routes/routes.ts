@@ -36,19 +36,19 @@ export const registerRoutes = (app: Express) => {
         upload.single('file'),
         uploadStats)
 
-    app.get('/analytics/games/:id/players', getPlayerStatsByGameId)
-    app.get('/analytics/games/:id/teams', getTeamStatsByGameId)
+    app.get('/games/:id/players', getPlayerStatsByGameId)
+    app.get('/games/:id/teams', getTeamStatsByGameId)
 
     app.delete(
-        '/analytics/games/:id/stats',
+        '/games/:id/stats',
         authMiddleware,
         authoriseRoles('admin', 'service'),
         deleteGameStatsHandler,
     )
 
-    app.get('/analytics/players/rankings', getTopPlayersRanking)
-    app.get('/analytics/players/aggregated-rankings', getAggregatedPlayersRankingHandler)
-    app.get('/analytics/players/:playerName/summary', getPlayerSummaryHandler)
+    app.get('/players/rankings', getTopPlayersRanking)
+    app.get('/players/aggregated-rankings', getAggregatedPlayersRankingHandler)
+    app.get('/players/:playerName/summary', getPlayerSummaryHandler)
 
     app.post(
         '/process',
@@ -58,7 +58,7 @@ export const registerRoutes = (app: Express) => {
     )
 
     app.post(
-        '/analytics/chat',
+        '/chat',
         authMiddleware,
         authoriseRoles('admin', 'coach', 'dt'),
         upload.single('file'),
