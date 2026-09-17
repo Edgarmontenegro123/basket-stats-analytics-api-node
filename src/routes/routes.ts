@@ -51,7 +51,7 @@ export const registerRoutes = (app: Express) => {
     app.get('/analytics/players/:playerName/summary', getPlayerSummaryHandler)
 
     app.post(
-        '/analytics/process',
+        '/process',
         authMiddleware,
         authoriseRoles('admin', 'coach', 'dt'),
         processAnalytics,
