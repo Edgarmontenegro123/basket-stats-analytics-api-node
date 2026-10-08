@@ -1,5 +1,6 @@
-import { GameDetails } from '../models/game-details'
+import {GameDetails} from '../models/game-details'
 import jwt from 'jsonwebtoken'
+import {SyncPlayerPayload} from '../models/sync-player'
 
 export const getGameDetailsById = async (
     gameId: string,
@@ -77,6 +78,31 @@ export const updateGameResult = async (
     if (!response.ok) {
         const errorBody = await response.text()
         throw new Error(`Error updating game result: ${errorBody}`)
+    }
+
+    return response.json()
+}
+
+export const syncPlayersWithManagementApi = async (
+    players: SyncPlayerPayload[]
+) => {
+    const managementApiUrl = process.env.MANAGEMENT_API_URL
+
+    if (!managementApiUrl) {
+        throw new Error('MANAGEMENT_API_URL is not configured')
+    }
+
+    const response = await fetch(`${managementApiUrl}/players/sync`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ players }),
+    })
+
+    if (!response.ok) {
+        const errorBody = await response.text()
+        throw new Error(`Error syncing players with Management API: ${errorBody}`)
     }
 
     return response.json()

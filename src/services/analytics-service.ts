@@ -2,7 +2,7 @@ import { extractTextFromPdf } from './pdf-service'
 import { parsePlayerStatsFromText } from './player-stats-parser'
 import { parseTeamStatsFromPlayerStats } from './team-stats-parser'
 import { teamNamesMatch } from '../helpers/team-name-match'
-import { getGameDetailsById, updateGameResult } from './management-api-service'
+import { getGameDetailsById, updateGameResult, syncPlayersWithManagementApi} from './management-api-service'
 import {
     getUploadById,
     markUploadAsProcessed,
@@ -55,6 +55,22 @@ export const processUploadAnalytics = async (
         extractedText,
         upload.game_id,
     );
+
+    const playersToSync = parsedPlayerStats.map((stat) => {
+        const isHome = teamNamesMatch(stat.team_name, gameDetails.home_team_name)
+        const teamId = isHome ? gameDetails.home_team_id : gameDetails.away_team_id
+
+        return {
+            team_id: teamId,
+            number: Number(stat.player_number) || 0,
+            full_name: stat.player_name,
+        }
+    })
+
+    if (playersToSync.length > 0) {
+        console.log('Syncing players with Management API...', playersToSync.length)
+        await syncPlayersWithManagementApi(playersToSync)
+    }
 
     const parsedTeamStats =
         parseTeamStatsFromPlayerStats(parsedPlayerStats);
