@@ -14,6 +14,7 @@ export type StatUpload = {
 };
 
 export const createUpload = async (upload: StatUpload): Promise<StatUpload> => {
+
     const result = await pool.query(
         `
         INSERT INTO uploads (
@@ -27,6 +28,7 @@ export const createUpload = async (upload: StatUpload): Promise<StatUpload> => {
             processed_at
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT (game_id, file_name) DO NOTHING
         RETURNING *
         `,
         [
@@ -63,11 +65,11 @@ export const markUploadAsProcessed = async (
 ): Promise<StatUpload | null> => {
     const result = await pool.query(
         `
-        UPDATE uploads
-        SET status = $1,
-            processed_at = $2
-        WHERE id = $3
-        RETURNING *
+            UPDATE uploads
+            SET status = $1,
+                processed_at = $2
+            WHERE id = $3
+                RETURNING *
         `,
         ['processed', processedAt, id],
     );

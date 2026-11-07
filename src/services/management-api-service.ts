@@ -107,3 +107,48 @@ export const syncPlayersWithManagementApi = async (
 
     return response.json()
 }
+
+export const updateGameDate = async (
+    gameId: string,
+    gameDate: string,
+) => {
+    const managementApiUrl = process.env.MANAGEMENT_API_URL
+    const jwtSecret = process.env.JWT_SECRET
+
+    if (!managementApiUrl) {
+        throw new Error('MANAGEMENT_API_URL is not configured')
+    }
+    if (!jwtSecret) {
+        throw new Error('JWT_SECRET is not configured')
+    }
+
+    const serviceToken = jwt.sign(
+        {
+            role: 'service',
+            source: 'analytics-api',
+        },
+        jwtSecret,
+        { expiresIn: '5m' },
+    )
+
+    const response = await fetch(
+        `${managementApiUrl}/games/${gameId}`,
+        {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${serviceToken}`,
+            },
+            body: JSON.stringify({
+                game_date: gameDate,
+            }),
+        },
+    )
+
+    if (!response.ok) {
+        const errorBody = await response.text()
+        throw new Error(`Error updating game date: ${errorBody}`)
+    }
+
+    return response.json()
+}
