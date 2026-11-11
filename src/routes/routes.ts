@@ -17,6 +17,7 @@ import {
     processAnalytics
 } from '../handlers/analytics-handler'
 import {handleAnalyticsChat} from '../handlers/analytics-chat-handler'
+import {handleOpenRouterProxy} from '../handlers/openrouter-proxy-handler'
 
 
 export const registerRoutes = (app: Express) => {
@@ -65,5 +66,11 @@ export const registerRoutes = (app: Express) => {
         handleAnalyticsChat
     )
 
+    app.post(
+        '/ai/chat',
+        authMiddleware,
+        authoriseRoles('admin', 'coach', 'dt'),
+        handleOpenRouterProxy
+    )
 }
 
