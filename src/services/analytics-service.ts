@@ -32,31 +32,46 @@ const monthMap: Record<string, number> = {
     dic: 11, diciembre: 11, dec: 11, december: 11
 }
 
-// Helper robusto para extraer la fecha real del reporte PDF (soporta texto en inglés/español y formatos numéricos)
+// Helper auxiliar para validar y construir la fecha UTC sin duplicar código
+const parseAndValidateDate = (dayStr: string, monthStr: string, yearStr: string): string | null => {
+    const cleanMonth = monthStr.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+    if (monthMap[cleanMonth] !== undefined) {
+        const day = parseInt(dayStr, 10)
+        const month = monthMap[cleanMonth]
+        const year = parseInt(yearStr, 10)
+        const date = new Date(Date.UTC(year, month, day, 12, 0, 0))
+
+        if (!isNaN(date.getTime())) {
+            return date.toISOString()
+        }
+    }
+    return null
+}
+
+// Helper robusto para extraer la fecha real del reporte PDF
 const extractDateFromPdfText = (text: string): string | null => {
     if (!text) return null
 
-    // 1. Buscar formatos con nombre de mes (soporta "15 de octubre de 2025", "oct 5, 2025", etc.)
-    const textDateRegex = /\b(\d{1,2})\s*(?:de)?\s+([a-záéíóú]+)\s*(?:de)?\s*,?\s*(\d{4})\b/gi
     let match
 
-    while ((match = textDateRegex.exec(text)) !== null) {
-        const [, dayStr, monthStr, yearStr] = match
-        const cleanMonth = monthStr.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-
-        if (monthMap[cleanMonth] !== undefined) {
-            const day = parseInt(dayStr, 10)
-            const month = monthMap[cleanMonth]
-            const year = parseInt(yearStr, 10)
-            const date = new Date(Date.UTC(year, month, day, 12, 0, 0))
-
-            if (!isNaN(date.getTime())) {
-                return date.toISOString()
-            }
-        }
+    // 1. Formato "may 4, 2025" u "october 5, 2025" (Mes primero)
+    const mdyRegex = /\b([a-záéíóú]+)\s+(\d{1,2}),?\s*(\d{4})\b/gi
+    while ((match = mdyRegex.exec(text)) !== null) {
+        const [, monthStr, dayStr, yearStr] = match
+        const result = parseAndValidateDate(dayStr, monthStr, yearStr)
+        if (result) return result
     }
 
-    // 2. Buscar formato numérico común DD/MM/YYYY o DD-MM-YYYY en el texto
+    // 2. Formato "4 de mayo de 2025" o "4 mayo 2025" (Día primero)
+    const dmyRegex = /\b(\d{1,2})\s*(?:de)?\s+([a-záéíóú]+)\s*(?:de)?\s*,?\s*(\d{4})\b/gi
+    while ((match = dmyRegex.exec(text)) !== null) {
+        const [, dayStr, monthStr, yearStr] = match
+        const result = parseAndValidateDate(dayStr, monthStr, yearStr)
+        if (result) return result
+    }
+
+    // 3. Formato numérico DD/MM/YYYY o DD-MM-YYYY
     const numericDateRegex = /\b(\d{2})[-/](\d{2})[-/](\d{4})\b/
     const numericMatch = text.match(numericDateRegex)
     if (numericMatch) {
@@ -104,10 +119,10 @@ export const processUploadAnalytics = async (
     }
 
     // Extraer y actualizar automáticamente la fecha real del partido desde el texto del PDF
-    const extractedDate = extractDateFromPdfText(extractedText)
-    if (extractedDate) {
+    const extractedDateResult = extractDateFromPdfText(extractedText)
+    if (extractedDateResult) {
         try {
-            await updateGameDate(upload.game_id, extractedDate)
+            await updateGameDate(upload.game_id, extractedDateResult)
         } catch (err) {
             console.error('Failed to auto-update game date from PDF', err)
         }
@@ -134,11 +149,11 @@ export const processUploadAnalytics = async (
         await syncPlayersWithManagementApi(playersToSync)
     }
 
-    const parsedTeamStats =
-        parseTeamStatsFromPlayerStats(parsedPlayerStats)
-
     const createdPlayerStats =
         await createPlayerStats(parsedPlayerStats)
+
+    const parsedTeamStats =
+        parseTeamStatsFromPlayerStats(parsedPlayerStats)
 
     const createdTeamStats =
         await createTeamStats(parsedTeamStats)
