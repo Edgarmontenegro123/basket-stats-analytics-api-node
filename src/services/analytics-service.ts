@@ -2,6 +2,7 @@ import {extractTextFromPdf} from './pdf-service'
 import {parsePlayerStatsFromText} from './player-stats-parser'
 import {parseTeamStatsFromPlayerStats} from './team-stats-parser'
 import {teamNamesMatch} from '../helpers/team-name-match'
+import {normaliseText} from '../helpers/normalise-text'
 import {getGameDetailsById, updateGameResult, updateGameDate, syncPlayersWithManagementApi} from './management-api-service'
 import {
     getUploadById,
@@ -32,9 +33,9 @@ const monthMap: Record<string, number> = {
     dic: 11, diciembre: 11, dec: 11, december: 11
 }
 
-// Helper auxiliar para validar y construir la fecha UTC sin duplicar código
 const parseAndValidateDate = (dayStr: string, monthStr: string, yearStr: string): string | null => {
-    const cleanMonth = monthStr.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    // Usamos el helper normaliseText del proyecto adaptado a British English
+    const cleanMonth = normaliseText(monthStr)
 
     if (monthMap[cleanMonth] !== undefined) {
         const day = parseInt(dayStr, 10)
@@ -49,31 +50,36 @@ const parseAndValidateDate = (dayStr: string, monthStr: string, yearStr: string)
     return null
 }
 
-// Helper robusto para extraer la fecha real buscando en el texto del PDF
 const extractDateFromPdfText = (text: string): string | null => {
     if (!text) return null
 
+    // Normalizamos espacios múltiples y saltos de línea preservando comas y formatos de fecha
+    const normalizedText = text.replace(/\s+/g, ' ')
+    console.log('DEBUG - Texto normalizado (primeros 300 caracteres):', normalizedText.substring(0, 300))
+
     let match
 
-    // 1. Formato "may 4, 2025" o variantes con espacios/saltos de línea (Mes primero)
+    // 1. Formato "may 4, 2025" (Mes primero)
     const mdyRegex = /\b([a-záéíóú]+)\s+(\d{1,2}),?\s*(\d{4})\b/gi
-    while ((match = mdyRegex.exec(text)) !== null) {
+    while ((match = mdyRegex.exec(normalizedText)) !== null) {
         const [, monthStr, dayStr, yearStr] = match
+        console.log('DEBUG - Coincidencia MDY encontrada:', { monthStr, dayStr, yearStr })
         const result = parseAndValidateDate(dayStr, monthStr, yearStr)
         if (result) return result
     }
 
-    // 2. Formato "4 de mayo de 2025" o "4 mayo 2025" (Día primero)
+    // 2. Formato "4 de mayo de 2025" (Día primero)
     const dmyRegex = /\b(\d{1,2})\s*(?:de)?\s+([a-záéíóú]+)\s*(?:de)?\s*,?\s*(\d{4})\b/gi
-    while ((match = dmyRegex.exec(text)) !== null) {
+    while ((match = dmyRegex.exec(normalizedText)) !== null) {
         const [, dayStr, monthStr, yearStr] = match
+        console.log('DEBUG - Coincidencia DMY encontrada:', { dayStr, monthStr, yearStr })
         const result = parseAndValidateDate(dayStr, monthStr, yearStr)
         if (result) return result
     }
 
     // 3. Formato numérico DD/MM/YYYY o DD-MM-YYYY
     const numericDateRegex = /\b(\d{2})[-/](\d{2})[-/](\d{4})\b/
-    const numericMatch = text.match(numericDateRegex)
+    const numericMatch = normalizedText.match(numericDateRegex)
     if (numericMatch) {
         const [, day, month, year] = numericMatch
         const date = new Date(Date.UTC(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10), 12, 0, 0))
@@ -118,17 +124,15 @@ export const processUploadAnalytics = async (
         )
     }
 
-    // Extraer y actualizar automáticamente la fecha real del partido desde el texto del PDF
     const extractedDateResult = extractDateFromPdfText(extractedText)
-    console.log('DEBUG - Texto completo extraído (primeros 300 caracteres):', extractedText?.substring(0, 300))
     console.log('DEBUG - Fecha detectada por la regex:', extractedDateResult)
 
     if (extractedDateResult) {
         try {
-            await updateGameDate(upload.game_id, extractedDateResult)
-            console.log('DEBUG - Fecha de juego actualizada con éxito en Management API:', updateGameDate)
+            const result = await updateGameDate(upload.game_id, extractedDateResult)
+            console.log('DEBUG - Fecha de juego actualizada con éxito en Management API:', result)
         } catch (err) {
-            console.error('Failed to auto-update game date from PDF', err)
+            console.error('ERROR CRÍTICO - Falló la actualización automática de la fecha del juego:', err)
         }
     }
 
