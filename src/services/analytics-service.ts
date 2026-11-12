@@ -4,6 +4,7 @@ import {parsePlayerStatsFromText} from './player-stats-parser'
 import {parseTeamStatsFromPlayerStats} from './team-stats-parser'
 import {teamNamesMatch} from '../helpers/team-name-match'
 import {normaliseText} from '../helpers/normalise-text'
+import {normalisePlayerName} from '../helpers/normalise-player-name'
 import {getGameDetailsById, updateGameResult, updateGameDate, syncPlayersWithManagementApi} from './management-api-service'
 import {
     getUploadById,
@@ -184,7 +185,7 @@ export const processUploadAnalytics = async (
         return {
             team_id: teamId,
             number: Number(stat.player_number) || 0,
-            full_name: stat.player_name,
+            full_name: normalisePlayerName(stat.player_name),
         }
     })
 
