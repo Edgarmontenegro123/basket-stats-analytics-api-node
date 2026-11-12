@@ -120,9 +120,13 @@ export const processUploadAnalytics = async (
 
     // Extraer y actualizar automáticamente la fecha real del partido desde el texto del PDF
     const extractedDateResult = extractDateFromPdfText(extractedText)
+    console.log('DEBUG - Texto completo extraído (primeros 300 caracteres):', extractedText?.substring(0, 300))
+    console.log('DEBUG - Fecha detectada por la regex:', extractedDateResult)
+
     if (extractedDateResult) {
         try {
             await updateGameDate(upload.game_id, extractedDateResult)
+            console.log('DEBUG - Fecha de juego actualizada con éxito en Management API:', updateGameDate)
         } catch (err) {
             console.error('Failed to auto-update game date from PDF', err)
         }
