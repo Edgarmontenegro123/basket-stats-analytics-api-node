@@ -49,13 +49,13 @@ const parseAndValidateDate = (dayStr: string, monthStr: string, yearStr: string)
     return null
 }
 
-// Helper robusto para extraer la fecha real del reporte PDF
+// Helper robusto para extraer la fecha real buscando en el texto del PDF
 const extractDateFromPdfText = (text: string): string | null => {
     if (!text) return null
 
     let match
 
-    // 1. Formato "may 4, 2025" u "october 5, 2025" (Mes primero)
+    // 1. Formato "may 4, 2025" o variantes con espacios/saltos de línea (Mes primero)
     const mdyRegex = /\b([a-záéíóú]+)\s+(\d{1,2}),?\s*(\d{4})\b/gi
     while ((match = mdyRegex.exec(text)) !== null) {
         const [, monthStr, dayStr, yearStr] = match
