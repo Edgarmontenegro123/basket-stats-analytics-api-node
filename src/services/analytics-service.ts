@@ -17,15 +17,42 @@ import {
     getTeamStatsByGameId,
 } from './team-stats-service'
 
+const monthMap: Record<string, number> = {
+    ene: 0, enero: 0, jan: 0, january: 0,
+    feb: 1, febrero: 1, february: 1,
+    mar: 2, marzo: 2, march: 2,
+    abr: 3, abril: 3, apr: 3, april: 3,
+    may: 4, mayo: 4,
+    jun: 5, junio: 5, june: 5,
+    jul: 6, julio: 6, july: 6,
+    ago: 7, agosto: 7, aug: 7, august: 7,
+    sep: 8, septiembre: 8, sept: 8, september: 8,
+    oct: 9, octubre: 9, october: 9,
+    nov: 10, noviembre: 10, november: 10,
+    dic: 11, diciembre: 11, dec: 11, december: 11
+}
+
 // Helper robusto para extraer la fecha real del reporte PDF (soporta texto en inglés/español y formatos numéricos)
 const extractDateFromPdfText = (text: string): string | null => {
-    // 1. Buscar formato tipo "(may 4, 2025)" o "(oct 5, 2025)" o similares
-    const textDateRegex = /(?:may|jun|jul|aug|sep|oct|nov|dec|ene|feb|mar|abr|ago|dic)[a-z]* \d{1,2},? \d{4}/i
-    const textMatch = text.match(textDateRegex)
-    if (textMatch) {
-        const parsedDate = new Date(textMatch[0])
-        if (!isNaN(parsedDate.getTime())) {
-            return parsedDate.toISOString()
+    if (!text) return null
+
+    // 1. Buscar formatos con nombre de mes (soporta "15 de octubre de 2025", "oct 5, 2025", etc.)
+    const textDateRegex = /\b(\d{1,2})\s*(?:de)?\s+([a-záéíóú]+)\s*(?:de)?\s*,?\s*(\d{4})\b/gi
+    let match
+
+    while ((match = textDateRegex.exec(text)) !== null) {
+        const [, dayStr, monthStr, yearStr] = match
+        const cleanMonth = monthStr.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+        if (monthMap[cleanMonth] !== undefined) {
+            const day = parseInt(dayStr, 10)
+            const month = monthMap[cleanMonth]
+            const year = parseInt(yearStr, 10)
+            const date = new Date(Date.UTC(year, month, day, 12, 0, 0))
+
+            if (!isNaN(date.getTime())) {
+                return date.toISOString()
+            }
         }
     }
 
@@ -33,10 +60,10 @@ const extractDateFromPdfText = (text: string): string | null => {
     const numericDateRegex = /\b(\d{2})[-/](\d{2})[-/](\d{4})\b/
     const numericMatch = text.match(numericDateRegex)
     if (numericMatch) {
-        const [_, day, month, year] = numericMatch
-        const parsedDate = new Date(`${year}-${month}-${day}T12:00:00.000Z`)
-        if (!isNaN(parsedDate.getTime())) {
-            return parsedDate.toISOString()
+        const [, day, month, year] = numericMatch
+        const date = new Date(Date.UTC(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10), 12, 0, 0))
+        if (!isNaN(date.getTime())) {
+            return date.toISOString()
         }
     }
 
