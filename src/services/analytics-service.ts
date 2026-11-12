@@ -50,17 +50,25 @@ const parseAndValidateDate = (dayStr: string, monthStr: string, yearStr: string)
     return null
 }
 
+// Helper robusto para extraer la fecha real con regex flexible y depuración de contexto
 const extractDateFromPdfText = (text: string): string | null => {
     if (!text) return null
 
-    // Normalizamos espacios múltiples y saltos de línea preservando comas y formatos de fecha
     const normalizedText = text.replace(/\s+/g, ' ')
-    console.log('DEBUG - Texto normalizado (primeros 300 caracteres):', normalizedText.substring(0, 300))
+
+    // Depuración: Buscar cualquier año 20xx en el texto y mostrar el contexto exacto
+    const yearMatchIndex = normalizedText.search(/20\d{2}/)
+    if (yearMatchIndex !== -1) {
+        const snippet = normalizedText.substring(Math.max(0, yearMatchIndex - 40), Math.min(normalizedText.length, yearMatchIndex + 40))
+        console.log('DEBUG - Contexto alrededor del año en el PDF:', snippet)
+    } else {
+        console.log('DEBUG - No se encontró ningún año 20xx en el texto extraído del PDF.')
+    }
 
     let match
 
-    // 1. Formato "may 4, 2025" (Mes primero)
-    const mdyRegex = /\b([a-záéíóú]+)\s+(\d{1,2}),?\s*(\d{4})\b/gi
+    // 1. Formato Mes Día Año ultra flexible (ej. "may 4, 2025", "may 4 2025", etc.)
+    const mdyRegex = /\b([a-záéíóú]+)[\s.,-]+(\d{1,2})[\s.,-]+(\d{4})\b/gi
     while ((match = mdyRegex.exec(normalizedText)) !== null) {
         const [, monthStr, dayStr, yearStr] = match
         console.log('DEBUG - Coincidencia MDY encontrada:', { monthStr, dayStr, yearStr })
@@ -68,8 +76,8 @@ const extractDateFromPdfText = (text: string): string | null => {
         if (result) return result
     }
 
-    // 2. Formato "4 de mayo de 2025" (Día primero)
-    const dmyRegex = /\b(\d{1,2})\s*(?:de)?\s+([a-záéíóú]+)\s*(?:de)?\s*,?\s*(\d{4})\b/gi
+    // 2. Formato Día Mes Año ultra flexible (ej. "4 de mayo de 2025", "4 mayo 2025")
+    const dmyRegex = /\b(\d{1,2})[\s.,-]+(?:de\s+)?([a-záéíóú]+)[\s.,-]+(?:de\s+)?(\d{4})\b/gi
     while ((match = dmyRegex.exec(normalizedText)) !== null) {
         const [, dayStr, monthStr, yearStr] = match
         console.log('DEBUG - Coincidencia DMY encontrada:', { dayStr, monthStr, yearStr })
