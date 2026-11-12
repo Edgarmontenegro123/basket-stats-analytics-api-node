@@ -134,7 +134,7 @@ export const updateGameDate = async (
     const response = await fetch(
         `${managementApiUrl}/games/${gameId}`,
         {
-            method: 'PATCH',
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${serviceToken}`,
