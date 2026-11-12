@@ -132,7 +132,7 @@ export const updateGameDate = async (
     )
 
     const response = await fetch(
-        `${managementApiUrl}/games/${gameId}`,
+        `${managementApiUrl}/games/${gameId}/date`,
         {
             method: 'PATCH',
             headers: {
@@ -140,7 +140,7 @@ export const updateGameDate = async (
                 Authorization: `Bearer ${serviceToken}`,
             },
             body: JSON.stringify({
-                game_date: gameDate,
+                date: gameDate,
             }),
         },
     )
