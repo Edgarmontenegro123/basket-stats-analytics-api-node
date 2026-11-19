@@ -1,5 +1,5 @@
-import {Express} from 'express'
-import { authMiddleware } from '../middleware/auth-middleware'
+import {Router} from 'express'
+import {authMiddleware} from '../middleware/auth-middleware'
 import {authoriseRoles} from '../middleware/authorise-roles'
 import {upload} from '../services/multer-config'
 import {
@@ -19,46 +19,45 @@ import {
 import {handleAnalyticsChat} from '../handlers/analytics-chat-handler'
 import {handleOpenRouterProxy} from '../handlers/openrouter-proxy-handler'
 
-
-export const registerRoutes = (app: Express) => {
-    app.get('/health', (_req, res) => {
+export const registerRoutes = (router: Router) => {
+    router.get('/health', (_req, res) => {
         res.status(200).json({
             status: 'ok',
             service: 'basket-stats-analytics-api-node',
         });
     })
 
-    app.get('/uploads', getUploads)
-    app.get('/uploads/:id', getUploadById)
+    router.get('/uploads', getUploads)
+    router.get('/uploads/:id', getUploadById)
 
-    app.post('/uploads',
+    router.post('/uploads',
         authMiddleware,
         authoriseRoles('admin', 'coach', 'dt'),
         upload.single('file'),
         uploadStats)
 
-    app.get('/games/:id/players', getPlayerStatsByGameId)
-    app.get('/games/:id/teams', getTeamStatsByGameId)
+    router.get('/games/:id/players', getPlayerStatsByGameId)
+    router.get('/games/:id/teams', getTeamStatsByGameId)
 
-    app.delete(
+    router.delete(
         '/games/:id/stats',
         authMiddleware,
         authoriseRoles('admin', 'service'),
         deleteGameStatsHandler,
     )
 
-    app.get('/players/rankings', getTopPlayersRanking)
-    app.get('/players/aggregated-rankings', getAggregatedPlayersRankingHandler)
-    app.get('/players/:playerName/summary', getPlayerSummaryHandler)
+    router.get('/players/rankings', getTopPlayersRanking)
+    router.get('/players/aggregated-rankings', getAggregatedPlayersRankingHandler)
+    router.get('/players/:playerName/summary', getPlayerSummaryHandler)
 
-    app.post(
+    router.post(
         '/process',
         authMiddleware,
         authoriseRoles('admin', 'coach', 'dt'),
         processAnalytics,
     )
 
-    app.post(
+    router.post(
         '/chat',
         authMiddleware,
         authoriseRoles('admin', 'coach', 'dt'),
@@ -66,11 +65,10 @@ export const registerRoutes = (app: Express) => {
         handleAnalyticsChat
     )
 
-    app.post(
+    router.post(
         '/ai/chat',
         authMiddleware,
         authoriseRoles('admin', 'coach', 'dt'),
         handleOpenRouterProxy
     )
 }
-
