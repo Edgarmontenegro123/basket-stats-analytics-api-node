@@ -1,23 +1,20 @@
-# 1. Imagen base de Node.js
-FROM node:18-alpine
-
-# 2. Directorio de trabajo
+# 1. Imagen base de Node.js (actualizada a 22-alpine para paridad con el entorno)
+FROM node:22-alpine AS builder
 WORKDIR /app
-
-# 3. Copiar manifest de dependencias
 COPY package*.json ./
-
-# 4. Instalar dependencias
 RUN npm install
-
-# 5. Copiar el resto del código
 COPY . .
-
-# 6. Compilar TypeScript
 RUN npm run build
 
-# 7. Exponer el puerto de la Analytics API
-EXPOSE 3001
+# 2. Imagen de producción ligera
+FROM node:22-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install --production
+COPY --from=builder /app/dist ./dist
 
-# 8. Comando de arranque
-CMD ["npm", "start"]
+# Copiar el archivo .env de forma explícita para que dotenv lo detecte siempre
+COPY .env ./
+
+EXPOSE 3001
+CMD ["node", "dist/server.js"]
