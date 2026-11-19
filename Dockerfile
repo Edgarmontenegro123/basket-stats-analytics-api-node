@@ -13,8 +13,5 @@ COPY package*.json ./
 RUN npm install --production
 COPY --from=builder /app/dist ./dist
 
-# Copiar el archivo .env de forma explícita para que dotenv lo detecte siempre
-COPY .env ./
-
 EXPOSE 3001
 CMD ["node", "dist/server.js"]
