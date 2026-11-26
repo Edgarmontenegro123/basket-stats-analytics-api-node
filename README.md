@@ -1,132 +1,72 @@
 # Basket Stats - Analytics API
 
-The Analytics API is a Node.js microservice responsible for processing basketball match statistics and providing analytical data to the Basket Stats platform.
+Backend microservice responsible for processing basketball match box-score PDFs, computing player and team statistics, serving rankings and analytical summaries, and proxying AI requests for **Swish** within the **Basket Stats** platform.
 
-It receives match statistics files, extracts and processes player and team data, stores the resulting statistics, and exposes endpoints used by the frontend for rankings, player summaries, game statistics, and other analytical features.
-
-The service works together with the Management API to obtain game information and update game results after statistics have been successfully processed.
+Built with **Node.js**, **Express 5**, and **TypeScript**, using **PostgreSQL (Supabase)** as its database and integrating directly with `management-api-node` and **OpenRouter**.
 
 ---
 
 ## Responsibilities
 
-The Analytics API is responsible for:
-
-- Uploading and managing match statistics files.
-- Extracting statistics from match PDF files.
-- Validating uploaded statistics against the selected game.
-- Processing player statistics.
-- Calculating team statistics from player data.
-- Storing player and team statistics.
-- Providing game statistics and player rankings.
-- Providing aggregated player rankings and player summaries.
-- Updating game results through the Management API after successful processing.
-- Removing statistical data when related games, teams, or players are deleted.
+- Uploading and managing match statistics files (`PDF`).
+- Extracting, validating, and parsing box-score statistics in a two-step ETL workflow (`POST /uploads` + `POST /process`).
+- Validating uploaded box-scores against the selected game metadata from the Management API.
+- Persisting individual player box-scores (`player_stats`) and calculating aggregated team statistics (`team_stats`).
+- Serving game statistics, player rankings, aggregated season rankings, and player statistical summaries.
+- Updating completed game results in the Management API using a short-lived `service` JWT.
+- Cleaning up statistical records when games, teams, or players are deleted.
+- Providing an AI gateway proxy (`POST /ai/chat`) to **OpenRouter** (`meta-llama/llama-3.3-70b-instruct:free`) for the **Swish** assistant.
 
 ---
 
 ## Architecture
 
-The Analytics API is part of a microservices architecture composed of three main application components.
-
 ```text
-                         Basket Stats
-                              │
-                              ▼
-                    ┌──────────────────┐
-                    │     Frontend     │
-                    │ React + TypeScript│
-                    └────────┬─────────┘
-                             │
-              ┌──────────────┴──────────────┐
-              │                             │
-              ▼                             ▼
-    ┌───────────────────┐         ┌───────────────────┐
-    │   Management API  │◄────────│   Analytics API   │
-    │    Port 3000      │         │    Port 3001      │
-    └─────────┬─────────┘         └─────────┬─────────┘
-              │                             │
-              └──────────────┬──────────────┘
-                             │
-                             ▼
-                    ┌──────────────────┐
-                    │ Supabase         │
-                    │ PostgreSQL       │
-                    └──────────────────┘
+                       Basket Stats Platform
+                                 │
+                                 ▼
+                    ┌─────────────────────────┐
+                    │        Frontend         │
+                    │  React 19 + TypeScript  │
+                    │   (Includes Swish AI)   │
+                    └────────────┬────────────┘
+                                 │
+                ┌────────────────┴────────────────┐
+                │ /management                     │ /analytics
+                ▼                                 ▼
+     ┌─────────────────────┐           ┌─────────────────────┐
+     │   Management API    │◄──────────│    Analytics API    │
+     │     Port 3000       │  Internal │      Port 3001      │
+     └──────────┬──────────┘  Network  └──────────┬──────────┘
+                │                                 │
+                └────────────────┬────────────────┘
+                                 │
+                                 ▼
+                    ┌─────────────────────────┐
+                    │   Supabase PostgreSQL   │
+                    │  (Connection Pooler)    │
+                    └─────────────────────────┘
 ```
-
-## Production Deployment
-
-The backends are currently deployed on an Oracle Cloud VPS using Docker Compose.
-
-The Analytics API runs in the analytics-api Docker container and is exposed on port 3001.
-
-The Management API runs in the management-api container on port 3000.
-
-Both services use Supabase PostgreSQL as their database. The Analytics API communicates with the Management API internally through the Docker Compose network using:
-
-```http 
-http://management-api:3000
-```
-
-The VPS also contains a PostgreSQL Docker container for the project environment, although the current Analytics API configuration uses Supabase PostgreSQL instead.
 
 ---
 
 ## Main Features
 
-### Statistics Upload
+### Two-Step PDF Box-Score ETL
+1. **Upload (`POST /uploads`):** Receives a match box-score PDF via `multer`, stores the file, and registers upload metadata in the `uploads` table with a pending status.
+2. **Process (`POST /process`):**
+    - Retrieves target game details from `management-api-node` (`http://management-api:3000`).
+    - Extracts raw text using `pdf-parse` and validates participating team names to prevent mismatched uploads.
+    - Parses player stats (name, jersey number, minutes, starter status, points, rebounds, assists, turnovers, steals, blocks).
+    - Aggregates team totals (`team_stats`), persists player rows (`player_stats`), calculates the final score, updates the game via `PATCH /games/:id/result` using a short-lived `service` JWT, and marks the upload as processed (preventing duplicate processing).
 
-The API accepts match statistics files through the upload endpoint.
+### Rankings & Statistical Summaries
+- Per-game player and team box-scores (`GET /games/:id/players`, `GET /games/:id/teams`).
+- Game-by-game and season-aggregated player rankings (`GET /players/rankings`, `GET /players/aggregated-rankings`).
+- Individual player statistical profiles (`GET /players/:playerName/summary`).
 
-Uploaded files are stored locally and registered in the `uploads` table together with their processing status.
-
-### PDF Processing
-
-The service extracts text from uploaded PDF files using `pdf-parse`.
-
-The extracted data is processed to obtain:
-
-- Player names
-- Player numbers
-- Minutes played
-- Starter status
-- Points
-- Rebounds
-- Assists
-- Turnovers
-- Steals
-- Blocks
-
-### Game Validation
-
-Before processing a statistics file, the service retrieves the selected game from the Management API and validates the team names contained in the uploaded document.
-
-This helps prevent statistics from being associated with the wrong game.
-
-### Player Statistics
-
-Processed player statistics are stored in the `player_stats` table and can be retrieved through game-specific and player-specific endpoints.
-
-### Team Statistics
-
-Team statistics are calculated from the processed player statistics and stored in the `team_stats` table.
-
-### Rankings and Aggregated Statistics
-
-The API provides endpoints for:
-
-- Player rankings
-- Aggregated player rankings
-- Player statistical summaries
-- Game player statistics
-- Game team statistics
-
-### Game Result Update
-
-After successful statistics processing, the Analytics API calculates the game result and sends it to the Management API.
-
-The Management API is called using a short-lived service JWT with the `service` role.
+### Swish AI Gateway Proxy
+- Exposes `POST /ai/chat` as a secure backend proxy to **OpenRouter** (`meta-llama/llama-3.3-70b-instruct:free`), keeping API keys server-side while powering Swish's deterministic tool-calling and Generative UI cards (`MatchCard`, `PlayerCard`, `CompareCard`).
 
 ---
 
@@ -134,310 +74,141 @@ The Management API is called using a short-lived service JWT with the `service` 
 
 ### Health
 
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/health` | Checks whether the service is running |
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/health` | Public | Verify service health status |
 
-### Uploads
+### Uploads & ETL Processing
 
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/uploads` | Returns uploaded statistics files |
-| `GET` | `/uploads/:id` | Returns a specific upload |
-| `POST` | `/uploads` | Uploads a statistics file |
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/uploads` | Public | List uploaded box-score files |
+| `GET` | `/uploads/:id` | Public | Retrieve metadata for a specific upload |
+| `POST` | `/uploads` | Admin / Coach / DT | Upload a match PDF box-score |
+| `POST` | `/process` | Admin / Coach / DT | Validate, parse, and persist stats from an uploaded PDF |
 
 ### Game Statistics
 
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/games/:id/players` | Returns player statistics for a game |
-| `GET` | `/games/:id/teams` | Returns team statistics for a game |
-| `DELETE` | `/games/:id/stats` | Deletes all statistics associated with a game |
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/games/:id/players` | Public | Retrieve player statistics for a specific game |
+| `GET` | `/games/:id/teams` | Public | Retrieve team statistics for a specific game |
+| `DELETE` | `/games/:id/stats` | Admin / Service | Delete all statistics linked to a game |
 
-### Player Statistics
+### Player Statistics & Rankings
 
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/players/rankings` | Returns player rankings |
-| `GET` | `/players/aggregated-rankings` | Returns aggregated player rankings |
-| `GET` | `/players/:playerName/summary` | Returns a player's statistical summary |
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/players/rankings` | Public | Retrieve per-game player rankings |
+| `GET` | `/players/aggregated-rankings` | Public | Retrieve season-aggregated player rankings |
+| `GET` | `/players/:playerName/summary` | Public | Retrieve a player's statistical summary |
 
-### Processing
+### AI Assistant Proxy
 
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `POST` | `/process` | Processes an uploaded statistics file |
-
-### Chat
-
-The repository also contains an experimental document-processing and AI/RAG implementation through the `/chat` endpoint.
-
-This functionality is not considered part of the completed MVP functionality and is currently kept as a separate capability under development.
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `POST` | `/chat` | Processes an uploaded document and generates an AI-based response |
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/ai/chat` | Authenticated / Platform | Proxy chat completions to OpenRouter for Swish AI |
 
 ---
 
-## Authentication and Authorisation
+## Authentication & Authorisation
 
-Protected endpoints require a JWT Bearer token.
+Protected endpoints require a JWT Bearer token in the `Authorization` header:
 
-The API uses role-based authorisation.
-
-Supported roles include:
-
-- `admin`
-- `coach`
-- `dt`
-- `service`
-
-The following operations require authentication:
-
-| Operation | Allowed Roles |
-| --- | --- |
-| Upload statistics | `admin`, `coach`, `dt` |
-| Process statistics | `admin`, `coach`, `dt` |
-| Delete game statistics | `admin`, `service` |
-| AI/RAG chat | `admin`, `coach`, `dt` |
-
-Public endpoints, such as game statistics and rankings, do not require authentication.
-
----
-
-## Statistics Processing Flow
-
-The main statistics processing workflow is:
-
-```text
-1. Upload PDF
-       │
-       ▼
-2. Store upload metadata
-       │
-       ▼
-3. Process uploaded file
-       │
-       ▼
-4. Retrieve game details
-   from Management API
-       │
-       ▼
-5. Extract PDF text
-       │
-       ▼
-6. Validate team names
-       │
-       ▼
-7. Parse player statistics
-       │
-       ▼
-8. Calculate team statistics
-       │
-       ▼
-9. Store statistics
-       │
-       ▼
-10. Calculate game result
-       │
-       ▼
-11. Update game through
-    Management API
-       │
-       ▼
-12. Mark upload as processed
+```http
+Authorization: Bearer <token>
 ```
 
-The service also prevents an already processed upload from being processed again.
+| Operation | Allowed Roles |
+| :--- | :--- |
+| Upload box-score PDF | `admin`, `coach`, `dt` |
+| Process uploaded box-score | `admin`, `coach`, `dt` |
+| Delete game statistics | `admin`, `service` |
+| Public queries (`health`, `games`, `rankings`, `summary`) | Public |
 
 ---
 
-## Database
+## Database Schema
 
-The Analytics API uses PostgreSQL.
+The Analytics API connects to **Supabase PostgreSQL** via the connection pooler (`pg`).
 
-The current production configuration connects to a Supabase PostgreSQL database through the Supabase connection pooler.
-
-The main tables are:
-
-`uploads`
-
-Stores information about uploaded statistics files and their processing status.
-
-`player_stats`
-
-Stores individual player statistics for each game.
-
-Main data includes:
-
-- Game
-- Team
-- Player number
-- Player name
-- Minutes
-- Starter status
-- Points
-- Rebounds
-- Assists
-- Turnovers
-- Steals
-- Blocks
-
-`team_stats`
-
-Stores aggregated team statistics for each game.
-
-Main data includes:
-
-- Game
-- Team
-- Points
-- Rebounds
-- Assists
-- Turnovers
-- Steals
-- Blocks
+- **`uploads`:** Tracks uploaded box-score PDFs, associated game IDs, timestamps, and processing status.
+- **`player_stats`:** Stores per-game box-scores (`game_id`, `team_id`, `player_number`, `player_name`, `minutes`, `is_starter`, `points`, `rebounds`, `assists`, `turnovers`, `steals`, `blocks`).
+- **`team_stats`:** Stores aggregated team totals per game (`game_id`, `team_id`, `points`, `rebounds`, `assists`, `turnovers`, `steals`, `blocks`).
 
 ---
 
-## Technologies
+## Tech Stack
 
-- Node.js
-- Express
-- TypeScript
-- PostgreSQL
-- Supabase
-- JWT
-- Multer
-- pdf-parse
-- CSV Parser
-- ExcelJS
-- Docker
-- Docker Compose
-
-The repository also contains components for AI and document processing using:
-
-- Google Gemini
-- LangChain
-- Recursive Character Text Splitter
-
-These components are currently considered experimental/development functionality rather than part of the completed MVP.
+- **Runtime & Language:** Node.js, TypeScript `^6.0.3`
+- **Framework:** Express `^5.2.1`, `cors ^2.8.6`, `dotenv ^17.4.2`
+- **Database:** PostgreSQL (Supabase) via `pg ^8.20.0`
+- **Authentication:** `jsonwebtoken ^9.0.3`
+- **File & Document Parsing:** `multer ^2.1.1`, `pdf-parse ^2.4.5`, `csv-parser ^3.2.1`, `exceljs ^4.4.0`
+- **AI Integration:** OpenRouter (`meta-llama/llama-3.3-70b-instruct:free`), `@google/genai ^2.20.0`, `@langchain/core ^1.2.9`, `@langchain/textsplitters ^1.0.1`
+- **Dev Tooling:** `ts-node-dev ^2.0.0`, `tsx ^4.22.0`
 
 ---
 
 ## Environment Variables
 
-The Analytics API requires the following environment variables:
+Create a `.env` file in the project root with the following variables:
 
-```dotenv
+```env
 PORT=3001
-
-DB_HOST=your_database_host
+DB_HOST=your_supabase_pooler_host
 DB_PORT=6543
 DB_NAME=postgres
 DB_USER=your_database_user
 DB_PASSWORD=your_database_password
 JWT_SECRET=your_jwt_secret
 MANAGEMENT_API_URL=http://management-api:3000
-GEMINI_API_KEY=your_gemini_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
-The production environment uses the Docker Compose service name to communicate with the Management API internally.
-
-Sensitive values must not be committed to the repository.
+- `PORT`: Listening port (`3001` in Docker Compose production; `8081` or `3001` in local development).
+- `DB_*`: Supabase PostgreSQL connection pooler credentials.
+- `JWT_SECRET`: Shared secret used to verify user JWTs and sign short-lived `service` tokens.
+- `MANAGEMENT_API_URL`: Internal Docker network URL (`http://management-api:3000`) used to validate games and update scores.
+- `OPENROUTER_API_KEY`: API key used by `/ai/chat` to communicate with OpenRouter.
 
 ---
 
-## Installation
+## Installation & Local Development
 
-Clone the repository and install the dependencies:
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-```bash
-git clone <repository-url>
-cd basket-stats-analytics-api-node
-npm install
-```
+2. Configure your `.env` file.
 
-Create a .env file with the required environment variables.
+3. Test the database connection:
+   ```bash
+   npm run db:test
+   ```
 
-### Development
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-Start the development server:
-
-```bash
-npm run dev
-```
-
-### Build
-
-Compile the TypeScript project:
-
-```bash
-npm run build
-```
-
-### Production
-
-Run the compiled application:
-
-```bash
-npm start
-```
-
-### Database Connection Test
-
-The repository also provides a database connection test:
-
-```bash
-npm run db:test
-```
+5. Build and run in production mode:
+   ```bash
+   npm run build
+   npm start
+   ```
 
 ---
 
-## Docker
+## Production Deployment
 
-The Analytics API includes a Dockerfile and can be built as part of the Basket Stats Docker Compose environment.
+The Analytics API is dockerized (`analytics-api` container on port `3001`) and deployed on an **Oracle Cloud VPS** (Ubuntu 24.04, São Paulo) behind an **Nginx** reverse proxy with SSL/TLS (`https://147.15.10.181.nip.io/analytics`).
 
-In the current production environment, the service runs as:
-
-```bash
-analytics-api
-Port: 3001
-```
-
-The Management API and Analytics API run as separate Docker containers and communicate through the Docker Compose network.
-
----
-
-## Deployment
-
-The Analytics API is currently deployed on an Oracle Cloud VPS.
-
-The production environment uses Docker Compose with the following application services:
-
-```text
-analytics-api     → port 3001
-management-api    → port 3000
-basket-stats-db   → port 5432
-```
-
-The Analytics API communicates with the Management API internally through:
-
-```http
-http://management-api:3000
-```
-
-The Analytics API uses Supabase PostgreSQL as its production database.
-
-The health endpoint can be used to verify the service status:
-
+Health check verification:
 ```http
 GET /health
 ```
-
-A successful response is:
-
 ```json
 {
   "status": "ok",
@@ -449,18 +220,14 @@ A successful response is:
 
 ## Related Services
 
-Basket Stats consists of three independent repositories:
-
 | Repository | Responsibility |
-| --- | --- |
-| Frontend | User interface and interaction |
-| Management API | Authentication and application data management |
-| Analytics API | Statistics processing and analytics |
-
-The Analytics API works together with the Management API to retrieve game information, update game results, and keep management and statistical data consistent.
+| :--- | :--- |
+| [`basket-stats-frontend`](https://github.com/Edgarmontenegro123/basket-stats-frontend) | React + TypeScript user interface & Swish AI assistant |
+| [`basket-stats-management-api-node`](https://github.com/Edgarmontenegro123/basket-stats-management-api-node) | Authentication, users, teams, players, seasons, and games |
+| [`basket-stats-analytics-api-node`](https://github.com/Edgarmontenegro123/basket-stats-analytics-api-node) | PDF box-score ETL, statistics, rankings, and AI gateway |
 
 ---
 
 ## Author
 
-Edgar Montenegro
+**Edgar Montenegro**
