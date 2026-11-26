@@ -74,39 +74,39 @@ Built with **Node.js**, **Express 5**, and **TypeScript**, using **PostgreSQL (S
 
 ### Health
 
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/health` | Public | Verify service health status |
+| Method | Endpoint  | Access | Description                  |
+|:-------|:----------|:-------|:-----------------------------|
+| `GET`  | `/health` | Public | Verify service health status |
 
 ### Uploads & ETL Processing
 
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/uploads` | Public | List uploaded box-score files |
-| `GET` | `/uploads/:id` | Public | Retrieve metadata for a specific upload |
-| `POST` | `/uploads` | Admin / Coach / DT | Upload a match PDF box-score |
-| `POST` | `/process` | Admin / Coach / DT | Validate, parse, and persist stats from an uploaded PDF |
+| Method | Endpoint       | Access             | Description                                             |
+|:-------|:---------------|:-------------------|:--------------------------------------------------------|
+| `GET`  | `/uploads`     | Public             | List uploaded box-score files                           |
+| `GET`  | `/uploads/:id` | Public             | Retrieve metadata for a specific upload                 |
+| `POST` | `/uploads`     | Admin / Coach / DT | Upload a match PDF box-score                            |
+| `POST` | `/process`     | Admin / Coach / DT | Validate, parse, and persist stats from an uploaded PDF |
 
 ### Game Statistics
 
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/games/:id/players` | Public | Retrieve player statistics for a specific game |
-| `GET` | `/games/:id/teams` | Public | Retrieve team statistics for a specific game |
-| `DELETE` | `/games/:id/stats` | Admin / Service | Delete all statistics linked to a game |
+| Method   | Endpoint             | Access          | Description                                    |
+|:---------|:---------------------|:----------------|:-----------------------------------------------|
+| `GET`    | `/games/:id/players` | Public          | Retrieve player statistics for a specific game |
+| `GET`    | `/games/:id/teams`   | Public          | Retrieve team statistics for a specific game   |
+| `DELETE` | `/games/:id/stats`   | Admin / Service | Delete all statistics linked to a game         |
 
 ### Player Statistics & Rankings
 
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/players/rankings` | Public | Retrieve per-game player rankings |
-| `GET` | `/players/aggregated-rankings` | Public | Retrieve season-aggregated player rankings |
-| `GET` | `/players/:playerName/summary` | Public | Retrieve a player's statistical summary |
+| Method | Endpoint                       | Access | Description                                |
+|:-------|:-------------------------------|:-------|:-------------------------------------------|
+| `GET`  | `/players/rankings`            | Public | Retrieve per-game player rankings          |
+| `GET`  | `/players/aggregated-rankings` | Public | Retrieve season-aggregated player rankings |
+| `GET`  | `/players/:playerName/summary` | Public | Retrieve a player's statistical summary    |
 
 ### AI Assistant Proxy
 
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
+| Method | Endpoint   | Access                   | Description                                       |
+|:-------|:-----------|:-------------------------|:--------------------------------------------------|
 | `POST` | `/ai/chat` | Authenticated / Platform | Proxy chat completions to OpenRouter for Swish AI |
 
 ---
@@ -119,12 +119,12 @@ Protected endpoints require a JWT Bearer token in the `Authorization` header:
 Authorization: Bearer <token>
 ```
 
-| Operation | Allowed Roles |
-| :--- | :--- |
-| Upload box-score PDF | `admin`, `coach`, `dt` |
-| Process uploaded box-score | `admin`, `coach`, `dt` |
-| Delete game statistics | `admin`, `service` |
-| Public queries (`health`, `games`, `rankings`, `summary`) | Public |
+| Operation                                                 | Allowed Roles          |
+|:----------------------------------------------------------|:-----------------------|
+| Upload box-score PDF                                      | `admin`, `coach`, `dt` |
+| Process uploaded box-score                                | `admin`, `coach`, `dt` |
+| Delete game statistics                                    | `admin`, `service`     |
+| Public queries (`health`, `games`, `rankings`, `summary`) | Public                 |
 
 ---
 
@@ -203,7 +203,7 @@ OPENROUTER_API_KEY=your_openrouter_api_key
 
 ## Production Deployment
 
-The Analytics API is dockerized (`analytics-api` container on port `3001`) and deployed on an **Oracle Cloud VPS** (Ubuntu 24.04, São Paulo) behind an **Nginx** reverse proxy with SSL/TLS (`https://147.15.10.181.nip.io/analytics`).
+The Analytics API is dockerized (`analytics-api` container on port `3001`) and deployed on an **Oracle Cloud VPS** (Ubuntu 24.04, São Paulo) behind a **Nginx** reverse proxy with SSL/TLS (`https://147.15.10.181.nip.io/analytics`).
 
 Health check verification:
 ```http
@@ -220,11 +220,11 @@ GET /health
 
 ## Related Services
 
-| Repository | Responsibility |
-| :--- | :--- |
-| [`basket-stats-frontend`](https://github.com/Edgarmontenegro123/basket-stats-frontend) | React + TypeScript user interface & Swish AI assistant |
+| Repository                                                                                                   | Responsibility                                            |
+|:-------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------|
+| [`basket-stats-frontend`](https://github.com/Edgarmontenegro123/basket-stats-frontend)                       | React + TypeScript user interface & Swish AI assistant    |
 | [`basket-stats-management-api-node`](https://github.com/Edgarmontenegro123/basket-stats-management-api-node) | Authentication, users, teams, players, seasons, and games |
-| [`basket-stats-analytics-api-node`](https://github.com/Edgarmontenegro123/basket-stats-analytics-api-node) | PDF box-score ETL, statistics, rankings, and AI gateway |
+| [`basket-stats-analytics-api-node`](https://github.com/Edgarmontenegro123/basket-stats-analytics-api-node)   | PDF box-score ETL, statistics, rankings, and AI gateway   |
 
 ---
 
