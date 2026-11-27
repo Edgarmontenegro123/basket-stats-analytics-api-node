@@ -21,7 +21,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd ~/basket-stats-analytics-api-node
-            git pull origin main
-            cd ~
+            git fetch origin main
+            git reset --hard origin/main
             docker compose build analytics-api
             docker compose up -d --force-recreate --no-deps analytics-api
