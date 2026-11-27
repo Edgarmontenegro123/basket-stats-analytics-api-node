@@ -3,8 +3,8 @@ import {Request, Response as ExpressResponse} from 'express'
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || ''
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions'
 
-const PRIMARY_MODEL = 'meta-llama/llama-3.3-70b-instruct:free'
-const FALLBACK_MODEL = 'google/gemini-2.0-flash-exp:free'
+const PRIMARY_MODEL = 'google/gemma-4-31b-it:free'
+const FALLBACK_MODEL = 'inclusionai/ling-3.2-flash:free'
 const TIMEOUT_MS = 10000
 
 const fetchWithTimeout = async(url: string, options: RequestInit, timeoutMs: number): Promise<Response> => {
