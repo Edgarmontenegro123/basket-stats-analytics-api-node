@@ -60,7 +60,7 @@ export const registerRoutes = (router: Router) => {
     router.post(
         '/chat',
         authMiddleware,
-        authoriseRoles('admin', 'coach', 'dt'),
+        authoriseRoles('admin', 'coach', 'dt', 'player'),
         upload.single('file'),
         handleAnalyticsChat
     )
@@ -68,7 +68,7 @@ export const registerRoutes = (router: Router) => {
     router.post(
         '/ai/chat',
         authMiddleware,
-        authoriseRoles('admin', 'coach', 'dt'),
+        authoriseRoles('admin', 'coach', 'dt', 'player'),
         handleOpenRouterProxy
     )
 }
